@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>中华历史时间轴</title>
+<style>
+:root {
+  --bg-primary: #0a0a14;
+  --bg-secondary: #12122a;
+  --bg-card: rgba(18, 18, 42, 0.94);
+  --text-primary: #e8e0d0;
+  --text-secondary: #a89b8c;
+  --text-muted: #5a5248;
+  --gold: #c9a96e;
+  --gold-light: #dbb87a;
+  --gold-dark: #8a6d3b;
+  --border-gold: rgba(201, 169, 110, 0.25);
+  --glow-gold: rgba(201, 169, 110, 0.15);
+  --cat-politics: #e74c3c;
+  --cat-science: #3498db;
+  --cat-person: #f39c12;
+  --cat-society: #2ecc71;
+  --cat-culture: #9b59b6;
+  --cat-military: #e67e22;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif;overflow:hidden;height:100vh;width:100vw;-webkit-user-select:none;user-select:none}
+
+.loading-screen{position:fixed;inset:0;background:var(--bg-primary);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity 0.5s}
+.loading-screen.hidden{opacity:0;pointer-events:none}
+.loading-spinner{width:32px;height:32px;border:2px solid var(--border-gold);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--gold);font-size:13px;margin-top:12px;letter-spacing:2px;opacity:0.7}
+
+.starfield{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--dur) ease-in-out infinite alternate}
+@keyframes twinkle{0%{opacity:0.2}100%{opacity:0.8}}
+
+.header{position:fixed;top:0;left:0;right:0;height:46px;background:linear-gradient(180deg,rgba(10,10,20,0.97) 0%,rgba(10,10,20,0.8) 80%,transparent 100%);display:flex;align-items:center;gap:8px;padding:0 12px;z-index:100}
+.header-title{font-size:14px;color:var(--gold);letter-spacing:3px;font-weight:300;white-space:nowrap}
+.search-box{flex:1;max-width:240px;position:relative}
+.search-input{width:100%;background:rgba(201,169,110,0.06);border:1px solid var(--border-gold);border-radius:14px;padding:4px 10px 4px 26px;color:var(--text-primary);font-size:11px;outline:none;transition:border-color 0.2s}
+.search-input::placeholder{color:var(--text-muted)}
+.search-input:focus{border-color:var(--gold)}
+.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--text-muted);pointer-events:none}
+.search-results{position:absolute;top:100%;left:0;right:0;background:var(--bg-secondary);border:1px solid var(--border-gold);border-radius:8px;margin-top:4px;max-height:260px;overflow-y:auto;display:none;z-index:150}
+.search-results.active{display:block}
+.search-item{padding:7px 10px;cursor:pointer;border-bottom:1px solid rgba(201,169,110,0.08);font-size:11px;display:flex;align-items:center;gap:6px}
+.search-item:hover{background:rgba(201,169,110,0.06)}
+.search-item .si-year{color:var(--gold);font-size:9px;min-width:50px}
+.search-item .si-title{color:var(--text-primary);flex:1}
+.search-item .si-cat{font-size:8px;padding:0 4px;border-radius:2px}
+.header-btns{display:flex;gap:5px}
+.btn{background:rgba(201,169,110,0.08);border:1px solid var(--border-gold);color:var(--gold);padding:4px 9px;border-radius:4px;font-size:11px;cursor:pointer;transition:background 0.2s;white-space:nowrap}
+.btn:hover{background:rgba(201,169,110,0.2)}
+
+.btn-home{position:fixed;right:10px;top:54px;background:rgba(10,10,20,0.88);border:1px solid var(--border-gold);color:var(--gold);width:34px;height:34px;border-radius:50%;font-size:15px;cursor:pointer;z-index:100;display:flex;align-items:center;justify-content:center;transition:all 0.2s;opacity:0.6}
+.btn-home:hover{background:rgba(201,169,110,0.15);opacity:1;transform:scale(1.1)}
+
+/* 密度控制 */
+.density-control{position:fixed;right:10px;bottom:50px;background:rgba(10,10,20,0.92);border:1px solid var(--border-gold);border-radius:8px;padding:6px 10px;z-index:100;display:flex;flex-direction:column;align-items:center;gap:2px}
+.density-label{font-size:8px;color:var(--text-muted);white-space:nowrap}
+.density-value{font-size:9px;color:var(--gold)}
+.density-slider{width:60px;-webkit-appearance:none;appearance:none;height:3px;background:var(--border-gold);border-radius:2px;outline:none}
+.density-slider::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--gold);border-radius:50%;cursor:pointer}
+.density-slider::-moz-range-thumb{width:12px;height:12px;background:var(--gold);border-radius:50%;cursor:pointer;border:none}
+
+.filter-bar{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background:rgba(10,10,20,0.92);border:1px solid var(--border-gold);border-radius:16px;padding:3px 8px;z-index:100}
+.filter-chip{font-size:9px;padding:2px 7px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all 0.2s;white-space:nowrap}
+.filter-chip.active{border-color:currentColor}
+.filter-chip[data-cat="all"]{color:var(--gold)}
+.filter-chip[data-cat="政治"]{color:var(--cat-politics)}
+.filter-chip[data-cat="科技"]{color:var(--cat-science)}
+.filter-chip[data-cat="人物"]{color:var(--cat-person)}
+.filter-chip[data-cat="社会"]{color:var(--cat-society)}
+.filter-chip[data-cat="文化"]{color:var(--cat-culture)}
+.filter-chip[data-cat="军事"]{color:var(--cat-military)}
+
+.scale-bar{position:fixed;bottom:40px;left:14px;z-index:100;pointer-events:none}
+.scale-line{height:2px;background:var(--gold);opacity:0.5;position:relative;border-radius:1px}
+.scale-line::before,.scale-line::after{content:'';position:absolute;width:1px;height:5px;background:var(--gold);opacity:0.5;top:-1.5px}
+.scale-line::before{left:0}
+.scale-line::after{right:0}
+.scale-label{font-size:8px;color:var(--text-muted);margin-top:2px;text-align:center}
+
+.zoom-indicator{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:rgba(10,10,20,0.9);border:1px solid var(--border-gold);border-radius:12px;padding:2px 10px;font-size:9px;color:var(--gold);z-index:100;pointer-events:none;opacity:0;transition:opacity 0.3s}
+.zoom-indicator.show{opacity:1}
+
+.timeline-viewport{width:100vw;height:100vh;overflow:hidden;position:relative;z-index:1}
+.timeline-canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+
+.timeline-line{position:absolute;top:50%;height:2px;transform:translateY(-1px);pointer-events:none;background:linear-gradient(90deg,transparent 0%,var(--gold-dark) 3%,var(--gold) 20%,var(--gold-light) 50%,var(--gold) 80%,var(--gold-dark) 97%,transparent 100%);box-shadow:0 0 8px var(--glow-gold),0 0 20px rgba(201,169,110,0.05)}
+.dynasty-band{position:absolute;height:40px;transform:translateY(-20px);pointer-events:none;border-radius:2px;opacity:0.04;transition:opacity 0.3s}
+.dynasty-label{position:absolute;transform:translateY(30px);text-align:center;pointer-events:none}
+.dynasty-label span{font-size:10px;color:var(--gold);opacity:0.35;letter-spacing:3px;white-space:nowrap;font-weight:300}
+.dynasty-divider{position:absolute;top:50%;width:8px;height:8px;background:var(--gold);transform:translate(-50%,-50%) rotate(45deg);opacity:0.3;z-index:2;box-shadow:0 0 6px var(--glow-gold)}
+
+.tick{position:absolute;pointer-events:none}
+.tick-line{width:1px;position:absolute;left:0}
+.tick-label{position:absolute;font-size:8px;color:var(--text-muted);white-space:nowrap;transform:translateX(-50%)}
+.tick.major .tick-line{background:rgba(201,169,110,0.25)}
+.tick.major .tick-label{font-size:9px;color:var(--text-secondary)}
+.tick.minor .tick-line{background:rgba(201,169,110,0.08)}
+
+.event-node{position:absolute;cursor:pointer;z-index:3;will-change:transform}
+.event-node.active{z-index:50}
+@media(hover:hover){
+  .event-node:hover{z-index:45}
+  .event-node:hover .event-card{border-color:var(--gold);box-shadow:0 0 12px rgba(201,169,110,0.1),0 4px 12px rgba(0,0,0,0.3)}
+}
+.event-dot{position:absolute;left:50%;transform:translate(-50%,-50%);border-radius:50%;z-index:5;transition:transform 0.15s,box-shadow 0.15s}
+.event-dot.level-1{width:12px;height:12px;box-shadow:0 0 8px currentColor,0 0 16px rgba(201,169,110,0.1)}
+.event-dot.level-2{width:8px;height:8px;box-shadow:0 0 5px currentColor}
+.event-dot.level-3{width:5px;height:5px;box-shadow:0 0 3px currentColor;opacity:0.8}
+.event-dot::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid currentColor;opacity:0;animation:dotPulse 2.5s ease-in-out infinite}
+.event-dot.level-1::after{opacity:0.2}
+@keyframes dotPulse{0%,100%{transform:scale(1);opacity:0.2}50%{transform:scale(1.6);opacity:0}}
+
+.event-stem{position:absolute;width:1px;left:50%;transform:translateX(-50%);z-index:1;opacity:0.3}
+.event-stem.above{bottom:50%}
+.event-stem.below{top:50%}
+
+.event-card{position:absolute;left:50%;transform:translateX(-50%);padding:5px 10px 5px 13px;background:var(--bg-card);border:1px solid var(--border-gold);border-radius:6px;cursor:pointer;transition:all 0.2s cubic-bezier(0.4,0,0.2,1);z-index:3;min-width:130px;max-width:180px;backdrop-filter:blur(4px)}
+.event-card:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(201,169,110,0.1),0 4px 12px rgba(0,0,0,0.3);transform:translateX(-50%) translateY(-2px)}
+.event-card.expanded{background:var(--bg-secondary);border-color:var(--gold);max-width:280px;z-index:10;box-shadow:0 0 16px rgba(201,169,110,0.12),0 8px 24px rgba(0,0,0,0.4);transform:translateX(-50%) translateY(-2px)}
+.event-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:6px 0 0 6px;background:var(--card-cat-color,var(--gold))}
+.cat-politics{--card-cat-color:var(--cat-politics)}.cat-science{--card-cat-color:var(--cat-science)}.cat-person{--card-cat-color:var(--cat-person)}.cat-society{--card-cat-color:var(--cat-society)}.cat-culture{--card-cat-color:var(--cat-culture)}.cat-military{--card-cat-color:var(--cat-military)}
+.event-card-inner{display:flex;flex-direction:column;gap:1px}
+.event-card-row{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+.event-year{font-size:9px;color:var(--gold);white-space:nowrap;min-width:52px}
+.event-title{font-size:11px;color:var(--text-primary);line-height:1.3;font-weight:500;flex:1}
+.event-cat-tag{font-size:8px;padding:0 4px;border-radius:2px;flex-shrink:0;opacity:0.65}
+.event-dynasty{font-size:8px;color:var(--text-muted);white-space:nowrap}
+.event-summary{font-size:10px;color:var(--text-secondary);line-height:1.4;margin-top:4px;display:none}
+.event-card.expanded .event-summary{display:block}
+.event-detail-btn{font-size:9px;color:var(--gold);margin-top:3px;display:none}
+.event-card.expanded .event-detail-btn{display:block}
+.event-card.important{border-color:rgba(201,169,110,0.4)}
+.event-card.important .event-title{font-weight:600}
+
+.detail-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.78);z-index:200;display:none;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(2px)}
+.detail-overlay.active{display:flex}
+.detail-panel{background:var(--bg-secondary);border:1px solid var(--border-gold);border-radius:12px;max-width:500px;width:100%;max-height:85vh;overflow-y:auto;padding:18px;box-shadow:0 0 30px rgba(201,169,110,0.08)}
+.detail-close{float:right;background:none;border:none;color:var(--text-secondary);font-size:16px;cursor:pointer;padding:0 2px}
+.detail-close:hover{color:var(--gold)}
+.detail-year{font-size:12px;color:var(--gold);margin-bottom:3px;letter-spacing:1px}
+.detail-title{font-size:19px;color:var(--text-primary);font-weight:600;line-height:1.3}
+.detail-tags{display:flex;gap:5px;margin:6px 0 10px;flex-wrap:wrap}
+.detail-tag{font-size:9px;padding:2px 7px;border-radius:6px;border:1px solid}
+.detail-image-placeholder{width:100%;height:120px;background:var(--bg-primary);border:1px dashed var(--border-gold);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:11px;margin-bottom:12px}
+.detail-desc{font-size:13px;color:var(--text-primary);line-height:1.85;opacity:0.9}
+.detail-context{margin-top:12px;padding-top:10px;border-top:1px solid var(--border-gold);font-size:11px;color:var(--text-secondary);line-height:1.6}
+.detail-context h4{color:var(--gold);font-size:11px;margin-bottom:3px;font-weight:500}
+
+@media(orientation:landscape) and (max-height:500px){
+  .header{height:38px;padding:0 8px}
+  .header-title{font-size:12px;letter-spacing:2px}
+  .search-input{font-size:10px;padding:3px 8px 3px 22px}
+  .btn-home{top:44px;width:30px;height:30px;font-size:13px}
+  .filter-bar{bottom:6px;padding:2px 5px}
+  .filter-chip{font-size:8px;padding:1px 5px}
+  .scale-bar{bottom:28px}
+  .density-control{bottom:38px;right:8px}
+  .event-card{max-width:200px}
+  .event-card.expanded{max-width:300px}
+  .dynasty-label span{font-size:9px}
+}
+@media(min-width:768px){
+  .event-card{max-width:200px}
+  .event-card.expanded{max-width:300px}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">加载历史数据...</div>
+</div>
+
+<div class="starfield" id="starfield"></div>
+
+<div class="header">
+  <span class="header-title">中华历史时间轴</span>
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="searchInput" placeholder="搜索事件、人物、朝代..." autocomplete="off">
+    <div class="search-results" id="searchResults"></div>
+  </div>
+  <div class="header-btns">
+    <button class="btn" onclick="toggleFullscreen()">全屏</button>
+  </div>
+</div>
+
+<button class="btn-home" id="btnHome" onclick="goHome()" title="回到当前位置">⌂</button>
+
+<div class="density-control">
+  <span class="density-label">密度</span>
+  <input type="range" class="density-slider" id="densitySlider" min="0.3" max="3" step="0.1" value="1">
+  <span class="density-value" id="densityValue">1.0x</span>
+</div>
+
+<div class="timeline-viewport" id="viewport">
+  <div class="timeline-canvas" id="canvas"></div>
+</div>
+
+<div class="scale-bar" id="scaleBar">
+  <div class="scale-line" id="scaleLine"></div>
+  <div class="scale-label" id="scaleLabel"></div>
+</div>
+
+<div class="zoom-indicator" id="zoomIndicator"></div>
+
+<div class="filter-bar" id="filterBar">
+  <div class="filter-chip active" data-cat="all">全部</div>
+  <div class="filter-chip active" data-cat="政治">政治</div>
+  <div class="filter-chip active" data-cat="军事">军事</div>
+  <div class="filter-chip active" data-cat="科技">科技</div>
+  <div class="filter-chip active" data-cat="文化">文化</div>
+  <div class="filter-chip active" data-cat="人物">人物</div>
+  <div class="filter-chip active" data-cat="社会">社会</div>
+</div>
+
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-panel" id="detailPanel"></div>
+</div>
+
+<script src="data.js"></script>
+<script>
+// ============ 星空 ============
+(function(){
+  const sf=document.getElementById('starfield');
+  for(let i=0;i<60;i++){
+    const s=document.createElement('div');s.className='star';
+    s.style.cssText='left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;width:'+(1+Math.random()*1.5)+'px;height:'+(1+Math.random()*1.5)+'px;--dur:'+(2+Math.random()*4)+'s;animation-delay:'+Math.random()*3+'s';
+    sf.appendChild(s);
+  }
+})();
+
+// ============ 分类 ============
+const CATS={"政治":{c:"#e74c3c",s:"cat-politics"},"军事":{c:"#e67e22",s:"cat-military"},"科技":{c:"#3498db",s:"cat-science"},"文化":{c:"#9b59b6",s:"cat-culture"},"人物":{c:"#f39c12",s:"cat-person"},"社会":{c:"#2ecc71",s:"cat-society"}};
+
+// ============ 数据初始化 ============
+const D = typeof TIMELINE_DATA !== 'undefined' ? TIMELINE_DATA : [];
+const events=D.map(d=>({year:d[0],month:d[1],day:d[2],title:d[3],summary:d[4],detail:d[5],context:d[6],image:d[7],dynasty:d[8],level:d[9],category:d[10]}));
+
+// Build index for O(1) lookup
+const eventIndex=new Map();
+events.forEach((e,i)=>eventIndex.set(e,i));
+
+document.getElementById('loadingScreen').classList.add('hidden');
+
+// ============ 朝代 ============
+const dynasties=[
+  {name:"夏",start:-2070,end:-1600,color:"#8B7355"},
+  {name:"商",start:-1600,end:-1046,color:"#A0522D"},
+  {name:"西周",start:-1046,end:-771,color:"#6B8E23"},
+  {name:"东周",start:-770,end:-256,color:"#556B2F"},
+  {name:"秦",start:-221,end:-207,color:"#2F4F4F"},
+  {name:"西汉",start:-202,end:8,color:"#4682B4"},
+  {name:"新",start:8,end:25,color:"#5F9EA0"},
+  {name:"东汉",start:25,end:220,color:"#4682B4"},
+  {name:"三国",start:220,end:280,color:"#8B4513"},
+  {name:"西晋",start:265,end:316,color:"#DAA520"},
+  {name:"东晋十六国",start:317,end:420,color:"#B8860B"},
+  {name:"南北朝",start:420,end:589,color:"#696969"},
+  {name:"隋",start:581,end:618,color:"#CD853F"},
+  {name:"唐",start:618,end:907,color:"#DC143C"},
+  {name:"五代十国",start:907,end:960,color:"#8B8682"},
+  {name:"北宋",start:960,end:1127,color:"#9370DB"},
+  {name:"南宋",start:1127,end:1279,color:"#7B68EE"},
+  {name:"元",start:1271,end:1368,color:"#4169E1"},
+  {name:"明",start:1368,end:1644,color:"#B22222"},
+  {name:"清",start:1644,end:1912,color:"#FFD700"},
+  {name:"民国",start:1912,end:1949,color:"#3CB371"},
+  {name:"新中国",start:1949,end:2025,color:"#FF4500"},
+];
+
+// ============ 数据范围自适应 ============
+let DATA_MIN, DATA_MAX;
+(function(){
+  if(events.length===0){DATA_MIN=-2070;DATA_MAX=2025;return}
+  DATA_MIN=events[0].year;
+  DATA_MAX=events[0].year;
+  for(const e of events){
+    if(e.year<DATA_MIN)DATA_MIN=e.year;
+    if(e.year>DATA_MAX)DATA_MAX=e.year;
+  }
+  // Add small padding (5% of range)
+  const range=DATA_MAX-DATA_MIN;
+  const pad=Math.max(range*0.03,50);
+  DATA_MIN=Math.floor(DATA_MIN-pad);
+  DATA_MAX=Math.ceil(DATA_MAX+pad);
+})();
+
+// ============ DOM ============
+const viewport=document.getElementById('viewport');
+const canvas=document.getElementById('canvas');
+const zoomIndicator=document.getElementById('zoomIndicator');
+const detailOverlay=document.getElementById('detailOverlay');
+const detailPanel=document.getElementById('detailPanel');
+const searchInput=document.getElementById('searchInput');
+const searchResults=document.getElementById('searchResults');
+const scaleLine=document.getElementById('scaleLine');
+const scaleLabel=document.getElementById('scaleLabel');
+const densitySlider=document.getElementById('densitySlider');
+const densityValueEl=document.getElementById('densityValue');
+
+// ============ State ============
+let offsetX=0, pixelsPerYear=0.15;
+let activeCategories=new Set(["政治","军事","科技","文化","人物","社会"]);
+let expandedCard=null;
+let touchState='idle', lastPinchTime=0, pinchCurrentDist=0, pinchConfirmed=false;
+const PINCH_COOLDOWN=300, PINCH_DEADZONE=10;
+let velocity=0;
+let densityMultiplier=1.0;
+
+// ============ rAF Batching ============
+let renderPending=false;
+function requestRender(){
+  if(!renderPending){
+    renderPending=true;
+    requestAnimationFrame(doRender);
+  }
+}
+function doRender(){
+  renderPending=false;
+  render();
+}
+
+// ============ Helpers ============
+function getZoomLevel(){if(pixelsPerYear<0.25)return 1;if(pixelsPerYear<1.2)return 2;return 3}
+function getZoomLabel(){const l=getZoomLevel();return l===1?'宏观 · 朝代':l===2?'中观 · 年代':'微观 · 日期'}
+function yearToX(y){return y*pixelsPerYear+offsetX}
+function xToYear(x){return(x-offsetX)/pixelsPerYear}
+function formatYear(y){return y<0?'前'+Math.abs(y)+'年':y+'年'}
+function formatYearFull(e){let s=formatYear(e.year);if(e.month)s+=e.month+'月';if(e.day)s+=e.day+'日';return s}
+function getCatColor(c){return CATS[c]?CATS[c].c:'#c9a96e'}
+function getCatCSS(c){return CATS[c]?CATS[c].s:''}
+
+// ============ Smart Density ============
+function getMaxVisibleEvents(vw, zl){
+  // Base density: how many events can fit comfortably
+  // At macro: fewer events, at micro: more events
+  const base = zl===1 ? Math.floor(vw/80) : zl===2 ? Math.floor(vw/50) : Math.floor(vw/35);
+  return Math.max(5, Math.floor(base * densityMultiplier));
+}
+
+function selectVisibleEvents(visS, visE, vw){
+  const zl = getZoomLevel();
+  const maxEvents = getMaxVisibleEvents(vw, zl);
+
+  // Filter by category and level
+  let candidates = events.filter(e=>{
+    if(!activeCategories.has(e.category)) return false;
+    if(zl < e.level) return false;
+    return e.year >= visS && e.year <= visE;
+  });
+
+  // If within budget, show all
+  if(candidates.length <= maxEvents) return candidates;
+
+  // Priority sort: level 1 first, then level 2, then level 3
+  // Within same level, spread evenly by picking from time-sorted list
+  candidates.sort((a,b)=>a.level-b.level || a.year-b.year);
+
+  // Take all level 1
+  const level1 = candidates.filter(e=>e.level===1);
+  if(level1.length >= maxEvents) {
+    // Even spread level 1
+    return spreadPick(level1, maxEvents);
+  }
+
+  const level2 = candidates.filter(e=>e.level===2);
+  const remaining2 = maxEvents - level1.length;
+  if(remaining2 <= 0) return level1.slice(0, maxEvents);
+
+  const picked2 = spreadPick(level2, Math.min(remaining2, level2.length));
+  const combined = level1.concat(picked2);
+  if(combined.length >= maxEvents) return combined.slice(0, maxEvents);
+
+  const level3 = candidates.filter(e=>e.level===3);
+  const remaining3 = maxEvents - combined.length;
+  const picked3 = spreadPick(level3, Math.min(remaining3, level3.length));
+  return combined.concat(picked3);
+}
+
+// Pick N items evenly spaced from array
+function spreadPick(arr, n){
+  if(n>=arr.length) return arr;
+  if(n<=0) return [];
+  const result=[];
+  for(let i=0;i<n;i++){
+    const idx=Math.floor(i*arr.length/n);
+    result.push(arr[idx]);
+  }
+  return result;
+}
+
+// ============ Node Pool ============
+const nodePool=[];
+const activeNodes=new Map();
+
+function getPoolNode(){
+  if(nodePool.length>0){
+    const node=nodePool.pop();
+    node.style.display='';
+    return node;
+  }
+  const node=document.createElement('div');
+  node.className='event-node';
+  node.innerHTML='<div class="event-dot"></div><div class="event-stem"></div><div class="event-card"><div class="event-card-inner"><div class="event-card-row"><span class="event-year"></span><span class="event-title"></span></div><div class="event-card-row"><span class="event-cat-tag"></span><span class="event-dynasty"></span></div><div class="event-summary"></div><div class="event-detail-btn">查看详情 →</div></div></div>';
+  return node;
+}
+
+function returnPoolNode(node){
+  node.style.display='none';
+  node.classList.remove('active');
+  const card=node.querySelector('.event-card');
+  if(card){card.classList.remove('expanded');card.style.cssText=''}
+  node.style.transform='';
+  nodePool.push(node);
+}
+
+// ============ Card Layout ============
+function layoutCards(vis,vh,vw){
+  const centerY=vh/2, gap=6;
+  const above=[],below=[],results=[];
+  // Sort by level then year for consistent layout
+  const sorted=[...vis].sort((a,b)=>a.level!==b.level?a.level-b.level:a.year-b.year);
+  sorted.forEach(item=>{
+    const x=item.x, estW=item.level===1?145:item.level===2?125:105, cardH=item.level===1?48:40;
+    const cL=x-estW/2, cR=x+estW/2;let placed=false;
+    for(let tier=0;tier<5;tier++){
+      const stem=16+tier*(cardH+8), cB=centerY-4-stem, cT=cB-cardH;let ov=false;
+      for(const s of above){if(cL<s.r+gap&&cR>s.l-gap&&cT<s.b&&cB>s.b-s.h){ov=true;break}}
+      if(!ov){results.push({...item,pos:'above',stem,tier});above.push({l:cL,r:cR,b:cB,h:cardH});placed=true;break}
+    }
+    if(!placed){for(let tier=0;tier<5;tier++){
+      const stem=16+tier*(cardH+8), cT=centerY+4+stem;let ov=false;
+      for(const s of below){if(cL<s.r+gap&&cR>s.l-gap&&cT<s.t+s.h&&cT+cardH>s.t){ov=true;break}}
+      if(!ov){results.push({...item,pos:'below',stem,tier});below.push({l:cL,r:cR,t:cT,h:cardH});placed=true;break}
+    }}
+    if(!placed) results.push({...item,pos:'above',stem:16,tier:0});
+  });
+  return results;
+}
+
+// ============ Main Render ============
+function render(){
+  const vw=viewport.clientWidth, vh=viewport.clientHeight, centerY=vh/2;
+  const zl=getZoomLevel();
+  const visS=xToYear(0), visE=xToYear(vw);
+  let html='';
+
+  // --- Background: timeline line ---
+  const lL=yearToX(Math.max(visS-100,DATA_MIN)), lR=yearToX(Math.min(visE+100,DATA_MAX));
+  if(lR>0&&lL<vw) html+='<div class="timeline-line" style="left:'+Math.max(0,lL)+'px;width:'+(Math.min(vw,lR)-Math.max(0,lL))+'px;top:'+centerY+'px"></div>';
+
+  // --- Background: dynasty bands + labels ---
+  dynasties.forEach(d=>{
+    const x1=yearToX(d.start), x2=yearToX(d.end);
+    if(x2<0||x1>vw) return;
+    html+='<div class="dynasty-band" style="left:'+x1+'px;width:'+Math.max(x2-x1,2)+'px;top:'+centerY+'px;background:'+d.color+'"></div>';
+    html+='<div class="dynasty-divider" style="left:'+x1+'px;top:'+centerY+'px"></div>';
+    if(zl<=2){const cx=(x1+x2)/2;if(cx>-80&&cx<vw+80) html+='<div class="dynasty-label" style="left:'+cx+'px;top:'+centerY+'px"><span>'+d.name+'</span></div>'}
+  });
+
+  // --- Background: ticks ---
+  const yr=visE-visS;
+  let ti;
+  if(yr>4000)ti=500;else if(yr>1500)ti=200;else if(yr>600)ti=100;else if(yr>200)ti=50;else if(yr>80)ti=20;else if(yr>30)ti=10;else if(yr>10)ti=5;else ti=1;
+  const ft=Math.max(Math.floor(visS/ti)*ti,DATA_MIN), lt=Math.min(visE+ti,DATA_MAX);
+  for(let y=ft;y<=lt;y+=ti){
+    const x=yearToX(y);if(x<-30||x>vw+30)continue;
+    const isMaj=ti>=200||y%(ti*5)===0, tH=isMaj?16:6;
+    html+='<div class="tick '+(isMaj?'major':'minor')+'" style="left:'+x+'px;top:'+centerY+'px"><div class="tick-line" style="height:'+tH+'px;top:'+(-tH/2)+'px;background:rgba(201,169,110,'+(isMaj?0.25:0.06)+')"></div>';
+    if(isMaj||ti<=20) html+='<div class="tick-label" style="top:'+(tH/2+3)+'px;left:0">'+formatYear(y)+'</div>';
+    html+='</div>';
+  }
+
+  // --- Events with smart density ---
+  const visible=selectVisibleEvents(visS-50, visE+50, vw);
+  const items=visible.map(e=>({event:e, idx:eventIndex.get(e), x:yearToX(e.year), level:e.level}));
+  const laid=layoutCards(items,vh,vw);
+
+  // Determine which events should be visible
+  const newVisible=new Map();
+  laid.forEach(item=>{newVisible.set(item.idx, item)});
+
+  // Remove nodes no longer visible
+  for(const [idx, node] of activeNodes){
+    if(!newVisible.has(idx)){
+      if(node.parentNode) node.parentNode.removeChild(node);
+      activeNodes.delete(idx);
+      returnPoolNode(node);
+    }
+  }
+
+  // Add/update visible nodes
+  for(const [idx, layout] of newVisible){
+    const e=layout.event, x=layout.x, pos=layout.pos, stem=layout.stem;
+    const cc=getCatColor(e.category), css=getCatCSS(e.category);
+    const yr2=formatYearFull(e);
+    const isExp=expandedCard===idx;
+
+    let node=activeNodes.get(idx);
+    if(!node){
+      node=getPoolNode();
+      node.dataset.idx=idx;
+      canvas.appendChild(node);
+      activeNodes.set(idx, node);
+    }
+
+    // Position via CSS transform (GPU-accelerated)
+    node.style.transform='translate('+x+'px,'+centerY+'px)';
+    node.style.left='0';
+    node.style.top='0';
+
+    if(isExp) node.classList.add('active');
+    else node.classList.remove('active');
+
+    // Dot
+    const dot=node.querySelector('.event-dot');
+    dot.className='event-dot level-'+e.level;
+    dot.style.background=cc;
+    dot.style.color=cc;
+
+    // Stem
+    const stemEl=node.querySelector('.event-stem');
+    stemEl.className='event-stem '+pos;
+    stemEl.style.height=stem+'px';
+    stemEl.style.background=cc;
+
+    // Card
+    const card=node.querySelector('.event-card');
+    card.className='event-card '+pos+' '+css+' '+(e.level===1?'important':'')+(isExp?' expanded':'');
+    card.style.cssText=pos==='above'?'bottom:'+(4+stem)+'px':'top:'+(4+stem)+'px';
+
+    card.querySelector('.event-year').textContent=yr2;
+    card.querySelector('.event-title').textContent=e.title;
+    const catTag=card.querySelector('.event-cat-tag');
+    catTag.textContent=e.category;
+    catTag.style.color=cc;
+    catTag.style.background=cc+'15';
+    const dynEl=card.querySelector('.event-dynasty');
+    if(zl>=2){dynEl.textContent=e.dynasty;dynEl.style.display=''}
+    else{dynEl.style.display='none'}
+    const sumEl=card.querySelector('.event-summary');
+    const detBtn=card.querySelector('.event-detail-btn');
+    if(isExp){
+      sumEl.textContent=e.summary;sumEl.style.display='block';
+      detBtn.style.color=cc;detBtn.style.display='block';
+    }else{
+      sumEl.style.display='none';detBtn.style.display='none';
+    }
+  }
+
+  // Insert background HTML (ticks, dynasty bands, etc.) - keep event nodes, replace bg
+  // Collect bg elements into a container approach
+  // We need to preserve event nodes while updating bg
+  const bgContainer=document.createElement('div');
+  bgContainer.innerHTML=html;
+
+  // Remove old bg elements (not event-node)
+  const toRemove=[];
+  for(const child of canvas.children){
+    if(!child.classList.contains('event-node')){
+      toRemove.push(child);
+    }
+  }
+  toRemove.forEach(el=>canvas.removeChild(el));
+
+  // Insert new bg elements before event nodes
+  const firstNode=canvas.querySelector('.event-node');
+  if(firstNode){
+    while(bgContainer.firstChild){
+      canvas.insertBefore(bgContainer.firstChild, firstNode);
+    }
+  }else{
+    while(bgContainer.firstChild){
+      canvas.appendChild(bgContainer.firstChild);
+    }
+  }
+
+  updateScaleBar();
+}
+
+// ============ Scale Bar ============
+function updateScaleBar(){
+  const vw=viewport.clientWidth, targetPx=Math.min(100,vw*0.18);
+  const rawYears=(vw/pixelsPerYear)*(targetPx/vw);
+  const nice=[1,2,5,10,20,50,100,200,500,1000,2000,5000];
+  let step=nice.find(s=>s>=rawYears)||5000;
+  scaleLine.style.width=(step*pixelsPerYear)+'px';
+  scaleLabel.textContent=step>=1000?(step/1000)+'千年':step+'年';
+}
+
+// ============ Click Handling (Event Delegation) ============
+canvas.addEventListener('click',function(ev){
+  const node=ev.target.closest('.event-node');
+  if(node){
+    const idx=parseInt(node.dataset.idx);
+    ev.stopPropagation();
+    if(expandedCard===idx) showDetail(idx);
+    else{expandedCard=idx;requestRender()}
+    return;
+  }
+});
+
+viewport.addEventListener('click',function(ev){
+  if(expandedCard!==null&&!ev.target.closest('.event-card')&&!ev.target.closest('.event-node')){
+    expandedCard=null;requestRender();
+  }
+});
+
+// ============ Detail ============
+function showDetail(idx){
+  const e=events[idx];if(!e)return;const cc=getCatColor(e.category);
+  let imgH='<div class="detail-image-placeholder">📷 图片预留位</div>';
+  let ctxH=e.context?'<div class="detail-context"><h4>历史背景</h4>'+e.context+'</div>':'';
+  detailPanel.innerHTML='<button class="detail-close" onclick="closeDetail()">✕</button><div class="detail-year">'+formatYearFull(e)+'</div><div class="detail-title">'+e.title+'</div><div class="detail-tags"><span class="detail-tag" style="color:'+cc+';border-color:'+cc+'">'+e.category+'</span><span class="detail-tag" style="color:var(--gold);border-color:var(--gold)">'+e.dynasty+'</span><span class="detail-tag" style="color:var(--text-secondary);border-color:var(--text-muted)">'+(e.level===1?'★★★':e.level===2?'★★':'★')+'</span></div>'+imgH+'<div class="detail-desc">'+e.detail+'</div>'+ctxH;
+  detailOverlay.classList.add('active');
+}
+function closeDetail(){detailOverlay.classList.remove('active')}
+detailOverlay.addEventListener('click',e=>{if(e.target===detailOverlay)closeDetail()});
+
+// ============ Search ============
+let searchTimeout;
+searchInput.addEventListener('input',()=>{clearTimeout(searchTimeout);searchTimeout=setTimeout(doSearch,200)});
+searchInput.addEventListener('focus',()=>{if(searchInput.value.trim())doSearch()});
+function doSearch(){
+  const q=searchInput.value.trim().toLowerCase();if(!q){searchResults.classList.remove('active');return}
+  const m=events.filter(e=>e.title.toLowerCase().includes(q)||e.summary.toLowerCase().includes(q)||e.detail.toLowerCase().includes(q)||e.dynasty.toLowerCase().includes(q)||e.category.includes(q)).slice(0,15);
+  if(!m.length){searchResults.innerHTML='<div class="search-item"><span style="color:var(--text-muted)">未找到相关事件</span></div>'}
+  else{searchResults.innerHTML=m.map(e=>{const i=eventIndex.get(e),cc=getCatColor(e.category);return'<div class="search-item" onclick="jumpToEvent('+i+')"><span class="si-year">'+formatYearFull(e)+'</span><span class="si-title">'+e.title+'</span><span class="si-cat" style="color:'+cc+';background:'+cc+'15">'+e.category+'</span></div>'}).join('')}
+  searchResults.classList.add('active');
+}
+function jumpToEvent(idx){const e=events[idx],vw=viewport.clientWidth;offsetX=vw/2-e.year*pixelsPerYear;expandedCard=idx;searchResults.classList.remove('active');searchInput.value='';searchInput.blur();requestRender()}
+document.addEventListener('click',e=>{if(!e.target.closest('.search-box'))searchResults.classList.remove('active')});
+
+// ============ Navigation ============
+function goHome(){
+  // Calculate initial offset based on actual data center
+  const centerYear=(DATA_MIN+DATA_MAX)/2;
+  offsetX=viewport.clientWidth/2-centerYear*pixelsPerYear;
+  expandedCard=null;
+  requestRender();
+}
+function animateTo(ty,tppy){
+  const vw=viewport.clientWidth,so=offsetX,sp=pixelsPerYear,eo=vw/2-ty*tppy,ep=tppy,dur=400,st=performance.now();
+  function step(now){
+    const t=Math.min((now-st)/dur,1),ease=1-Math.pow(1-t,3);
+    pixelsPerYear=sp+(ep-sp)*ease;offsetX=so+(eo-so)*ease;
+    requestRender();
+    if(t<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ============ Touch ============
+let dragStartX=0, dragStartOffsetX=0, touchMoved=false, touchStartTime=0;
+let lastPointerX=0, lastTime=0;
+let pinchStartDist=0, pinchStartPPY=0, pinchCenterX=0, pinchCenterYear=0;
+
+viewport.addEventListener('touchstart',e=>{
+  const now=Date.now();
+  if(e.touches.length===1){
+    if(now-lastPinchTime<PINCH_COOLDOWN){e.preventDefault();return}
+    touchState='dragging';touchMoved=false;touchStartTime=now;
+    dragStartX=e.touches[0].clientX;dragStartOffsetX=offsetX;
+    velocity=0;lastPointerX=e.touches[0].clientX;lastTime=now;
+  }
+  else if(e.touches.length===2){
+    touchState='pinching';pinchConfirmed=false;
+    const dx=e.touches[1].clientX-e.touches[0].clientX,dy=e.touches[1].clientY-e.touches[0].clientY;
+    pinchStartDist=Math.sqrt(dx*dx+dy*dy);pinchCurrentDist=pinchStartDist;
+    pinchStartPPY=pixelsPerYear;
+    pinchCenterX=(e.touches[0].clientX+e.touches[1].clientX)/2;
+    pinchCenterYear=xToYear(pinchCenterX);
+  }
+  e.preventDefault();
+},{passive:false});
+
+viewport.addEventListener('touchmove',e=>{
+  if(touchState==='dragging'&&e.touches.length===1){
+    const dx=e.touches[0].clientX-dragStartX;
+    if(Math.abs(dx)>5)touchMoved=true;
+    offsetX=dragStartOffsetX+dx;
+    const now=Date.now(),dt=now-lastTime;
+    if(dt>0)velocity=(e.touches[0].clientX-lastPointerX)/dt*16;
+    lastPointerX=e.touches[0].clientX;lastTime=now;
+    requestRender();
+  }
+  else if(touchState==='pinching'&&e.touches.length===2){
+    const dx=e.touches[1].clientX-e.touches[0].clientX,dy=e.touches[1].clientY-e.touches[0].clientY;
+    pinchCurrentDist=Math.sqrt(dx*dx+dy*dy);
+    if(!pinchConfirmed&&Math.abs(pinchCurrentDist-pinchStartDist)<PINCH_DEADZONE){e.preventDefault();return}
+    pinchConfirmed=true;
+    if(pinchStartDist>0){
+      let np=pinchStartPPY*(pinchCurrentDist/pinchStartDist);
+      np=Math.max(0.01,Math.min(30,np));pixelsPerYear=np;
+      offsetX=pinchCenterX-pinchCenterYear*pixelsPerYear;
+    }
+    requestRender();
+    showZI();
+  }
+  else if(touchState==='dragging'&&e.touches.length===2){
+    touchState='pinching';pinchConfirmed=false;
+    const dx=e.touches[1].clientX-e.touches[0].clientX,dy=e.touches[1].clientY-e.touches[0].clientY;
+    pinchStartDist=Math.sqrt(dx*dx+dy*dy);pinchCurrentDist=pinchStartDist;
+    pinchStartPPY=pixelsPerYear;
+    pinchCenterX=(e.touches[0].clientX+e.touches[1].clientX)/2;
+    pinchCenterYear=xToYear(pinchCenterX);
+  }
+  e.preventDefault();
+},{passive:false});
+
+viewport.addEventListener('touchend',e=>{
+  if(touchState==='pinching'){
+    lastPinchTime=Date.now();
+    if(e.touches.length===1&&!pinchConfirmed){
+      touchState='dragging';dragStartX=e.touches[0].clientX;dragStartOffsetX=offsetX;
+      lastPointerX=e.touches[0].clientX;lastTime=Date.now();
+    }else{touchState='idle'}
+  }
+  else if(touchState==='dragging'){
+    if(e.touches.length===0){if(touchMoved)requestAnimationFrame(inertia);touchState='idle'}
+  }
+});
+
+function inertia(){
+  if(Math.abs(velocity)>0.3){
+    offsetX+=velocity;velocity*=0.93;
+    requestRender();
+    requestAnimationFrame(inertia);
+  }
+}
+
+// ============ Mouse ============
+let mDown=false, mSX=0, mSO=0;
+viewport.addEventListener('mousedown',e=>{
+  if(e.target.closest('.event-card,.btn,.filter-chip,.density-control'))return;
+  mDown=true;mSX=e.clientX;mSO=offsetX;velocity=0;lastPointerX=e.clientX;lastTime=Date.now();
+});
+viewport.addEventListener('mousemove',e=>{
+  if(!mDown)return;
+  offsetX=mSO+(e.clientX-mSX);
+  const now=Date.now(),dt=now-lastTime;
+  if(dt>0)velocity=(e.clientX-lastPointerX)/dt*16;
+  lastPointerX=e.clientX;lastTime=now;
+  requestRender();
+});
+viewport.addEventListener('mouseup',()=>{mDown=false;requestAnimationFrame(inertia)});
+viewport.addEventListener('mouseleave',()=>{mDown=false});
+
+// ============ Wheel ============
+viewport.addEventListener('wheel',e=>{
+  e.preventDefault();const r=viewport.getBoundingClientRect(),mx=e.clientX-r.left,my=xToYear(mx);
+  let np=pixelsPerYear*(e.deltaY>0?0.9:1.11);np=Math.max(0.01,Math.min(30,np));
+  pixelsPerYear=np;offsetX=mx-my*pixelsPerYear;
+  requestRender();
+  showZI();
+},{passive:false});
+
+// ============ Zoom Indicator ============
+function showZI(){zoomIndicator.textContent=getZoomLabel();zoomIndicator.classList.add('show');clearTimeout(showZI._t);showZI._t=setTimeout(()=>zoomIndicator.classList.remove('show'),1200)}
+
+// ============ Fullscreen ============
+function toggleFullscreen(){if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen()}
+
+// ============ Density Slider ============
+densitySlider.addEventListener('input',function(){
+  densityMultiplier=parseFloat(this.value);
+  densityValueEl.textContent=densityMultiplier.toFixed(1)+'x';
+  requestRender();
+});
+
+// ============ Filters ============
+document.querySelectorAll('.filter-chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    const cat=chip.dataset.cat;
+    if(cat==='all'){
+      const aa=chip.classList.contains('active');
+      document.querySelectorAll('.filter-chip').forEach(c=>{if(c.dataset.cat!=='all')c.classList.toggle('active',!aa)});
+      chip.classList.toggle('active',!aa);
+      activeCategories=!aa?new Set(["政治","军事","科技","文化","人物","社会"]):new Set();
+    }else{
+      chip.classList.toggle('active');
+      if(chip.classList.contains('active'))activeCategories.add(cat);else activeCategories.delete(cat);
+    }
+    requestRender();
+  });
+});
+
+// ============ Init ============
+// Center on data range
+(function(){
+  const centerYear=(DATA_MIN+DATA_MAX)/2;
+  offsetX=viewport.clientWidth/2-centerYear*pixelsPerYear;
+})();
+requestRender();
+window.addEventListener('resize',()=>requestRender());
+
+// ============ Keyboard ============
+document.addEventListener('keydown',e=>{
+  const step=viewport.clientWidth*0.3;
+  if(e.key==='ArrowLeft'){offsetX+=step;requestRender()}
+  if(e.key==='ArrowRight'){offsetX-=step;requestRender()}
+  if(e.key==='+'||e.key==='='){const cx=viewport.clientWidth/2,cy=xToYear(cx);pixelsPerYear=Math.min(30,pixelsPerYear*1.2);offsetX=cx-cy*pixelsPerYear;requestRender();showZI()}
+  if(e.key==='-'){const cx=viewport.clientWidth/2,cy=xToYear(cx);pixelsPerYear=Math.max(0.01,pixelsPerYear/1.2);offsetX=cx-cy*pixelsPerYear;requestRender();showZI()}
+  if(e.key==='Escape')closeDetail();
+  if(e.key==='Home'||e.key==='h')goHome();
+});
+</script>
+</body>
+</html>
