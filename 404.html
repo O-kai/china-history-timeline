@@ -153,6 +153,30 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 .detail-context{margin-top:12px;padding-top:10px;border-top:1px solid var(--border-gold);font-size:11px;color:var(--text-secondary);line-height:1.6}
 .detail-context h4{color:var(--gold);font-size:11px;margin-bottom:3px;font-weight:500}
 
+/* Feedback Button & Modal */
+.feedback-btn{position:fixed;right:10px;bottom:90px;width:36px;height:36px;background:rgba(10,10,20,0.92);border:1px solid var(--border-gold);border-radius:50%;color:var(--gold);font-size:16px;cursor:pointer;z-index:100;display:flex;align-items:center;justify-content:center;transition:all 0.2s;opacity:0.7;line-height:1}
+.feedback-btn:hover{background:rgba(201,169,110,0.15);opacity:1;transform:scale(1.1)}
+.feedback-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:300;display:none;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(2px)}
+.feedback-overlay.active{display:flex}
+.feedback-panel{background:var(--bg-secondary);border:1px solid var(--border-gold);border-radius:12px;max-width:420px;width:100%;padding:20px;box-shadow:0 0 30px rgba(201,169,110,0.08)}
+.feedback-title{font-size:16px;color:var(--gold);font-weight:500;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.feedback-close{background:none;border:none;color:var(--text-secondary);font-size:16px;cursor:pointer;padding:0 2px}
+.feedback-close:hover{color:var(--gold)}
+.feedback-group{margin-bottom:12px}
+.feedback-group label{display:block;font-size:11px;color:var(--text-secondary);margin-bottom:4px}
+.feedback-group textarea{width:100%;height:100px;background:var(--bg-primary);border:1px solid var(--border-gold);border-radius:8px;padding:8px 10px;color:var(--text-primary);font-size:13px;resize:vertical;outline:none;font-family:inherit;line-height:1.5}
+.feedback-group textarea::placeholder{color:var(--text-muted)}
+.feedback-group textarea:focus{border-color:var(--gold)}
+.feedback-group input{width:100%;background:var(--bg-primary);border:1px solid var(--border-gold);border-radius:8px;padding:7px 10px;color:var(--text-primary);font-size:12px;outline:none;font-family:inherit}
+.feedback-group input::placeholder{color:var(--text-muted)}
+.feedback-group input:focus{border-color:var(--gold)}
+.feedback-hint{font-size:9px;color:var(--text-muted);margin-top:3px}
+.feedback-submit{width:100%;padding:8px;background:linear-gradient(135deg,var(--gold-dark),var(--gold));border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer;transition:opacity 0.2s;font-weight:500}
+.feedback-submit:hover{opacity:0.9}
+.feedback-submit:disabled{opacity:0.4;cursor:not-allowed}
+.feedback-success{text-align:center;padding:20px 0;color:var(--gold);font-size:14px}
+.feedback-success .check{font-size:32px;margin-bottom:8px}
+
 @media(orientation:landscape) and (max-height:500px){
   .header{height:38px;padding:0 8px}
   .header-title{font-size:12px;letter-spacing:2px}
@@ -224,6 +248,28 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 
 <div class="detail-overlay" id="detailOverlay">
   <div class="detail-panel" id="detailPanel"></div>
+</div>
+
+<button class="feedback-btn" id="feedbackBtn" title="反馈建议">💬</button>
+<div class="feedback-overlay" id="feedbackOverlay">
+  <div class="feedback-panel">
+    <div class="feedback-title"><span>📝 反馈与建议</span><button class="feedback-close" id="feedbackClose">✕</button></div>
+    <div id="feedbackForm">
+      <div class="feedback-group">
+        <label>您的反馈</label>
+        <textarea id="feedbackText" placeholder="请输入您的使用感受、建议或发现的问题..."></textarea>
+      </div>
+      <div class="feedback-group">
+        <label>联系方式（选填）</label>
+        <input id="feedbackContact" placeholder="手机号 / 邮箱 / 微信等">
+        <div class="feedback-hint">方便我们与您沟通，不会公开</div>
+      </div>
+      <button class="feedback-submit" id="feedbackSubmit">提交反馈</button>
+    </div>
+    <div id="feedbackSuccess" style="display:none">
+      <div class="feedback-success"><div class="check">✅</div><div>感谢您的反馈！</div></div>
+    </div>
+  </div>
 </div>
 
 <script src="data.js"></script>
@@ -726,7 +772,24 @@ viewport.addEventListener('touchend',e=>{
     }else{touchState='idle'}
   }
   else if(touchState==='dragging'){
-    if(e.touches.length===0){if(touchMoved)requestAnimationFrame(inertia);touchState='idle'}
+    if(e.touches.length===0){
+      if(!touchMoved){
+        // Tap detection: find event-node under touch point
+        const touch=e.changedTouches[0];
+        const node=document.elementFromPoint(touch.clientX,touch.clientY);
+        const eventNode=node?node.closest('.event-node'):null;
+        if(eventNode){
+          const idx=parseInt(eventNode.dataset.idx);
+          if(expandedCard===idx) showDetail(idx);
+          else{expandedCard=idx;requestRender()}
+        }else if(expandedCard!==null&&!node?.closest('.event-card')&&!node?.closest('.event-node')){
+          expandedCard=null;requestRender();
+        }
+      }else{
+        requestAnimationFrame(inertia);
+      }
+      touchState='idle';
+    }
   }
 });
 
@@ -810,8 +873,42 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowRight'){offsetX-=step;requestRender()}
   if(e.key==='+'||e.key==='='){const cx=viewport.clientWidth/2,cy=xToYear(cx);pixelsPerYear=Math.min(30,pixelsPerYear*1.2);offsetX=cx-cy*pixelsPerYear;requestRender();showZI()}
   if(e.key==='-'){const cx=viewport.clientWidth/2,cy=xToYear(cx);pixelsPerYear=Math.max(0.01,pixelsPerYear/1.2);offsetX=cx-cy*pixelsPerYear;requestRender();showZI()}
-  if(e.key==='Escape')closeDetail();
+  if(e.key==='Escape'){closeDetail();closeFeedback()}
   if(e.key==='Home'||e.key==='h')goHome();
+});
+
+// ============ Feedback ============
+const feedbackBtn=document.getElementById('feedbackBtn');
+const feedbackOverlay=document.getElementById('feedbackOverlay');
+const feedbackClose=document.getElementById('feedbackClose');
+const feedbackForm=document.getElementById('feedbackForm');
+const feedbackSuccess=document.getElementById('feedbackSuccess');
+const feedbackSubmit=document.getElementById('feedbackSubmit');
+const feedbackText=document.getElementById('feedbackText');
+const feedbackContact=document.getElementById('feedbackContact');
+
+feedbackBtn.addEventListener('click',()=>{feedbackOverlay.classList.add('active')});
+feedbackClose.addEventListener('click',closeFeedback);
+feedbackOverlay.addEventListener('click',e=>{if(e.target===feedbackOverlay)closeFeedback()});
+
+function closeFeedback(){
+  feedbackOverlay.classList.remove('active');
+  setTimeout(()=>{feedbackForm.style.display='';feedbackSuccess.style.display='none';feedbackText.value='';feedbackContact.value='';feedbackSubmit.disabled=false},300);
+}
+
+feedbackSubmit.addEventListener('click',()=>{
+  const text=feedbackText.value.trim();
+  if(!text)return;
+  const contact=feedbackContact.value.trim();
+  const ua=navigator.userAgent;
+  const isMobile=/Mobi|Android|iPhone/i.test(ua);
+  const time=new Date().toLocaleString('zh-CN');
+  const title='[反馈] '+text.slice(0,60);
+  const body=`## 用户反馈\n\n${text}\n\n---\n- **联系方式**: ${contact||'未提供'}\n- **设备**: ${isMobile?'移动端':'桌面端'}\n- **时间**: ${time}`;
+  const issueUrl='https://github.com/O-kai/china-history-timeline/issues/new?labels=feedback&title='+encodeURIComponent(title)+'&body='+encodeURIComponent(body);
+  window.open(issueUrl,'_blank');
+  feedbackForm.style.display='none';
+  feedbackSuccess.style.display='block';
 });
 </script>
 </body>
