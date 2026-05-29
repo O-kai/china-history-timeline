@@ -347,10 +347,22 @@ const dynasties=[
 ];
 
 // Build lookup: year → dynasty name
+// Priority: non-overlap dynasties (main dynasties) take precedence over overlap ones
 const dynastyByYear = [];
+// First pass: write overlap dynasties
 for (const d of dynasties) {
-  for (let y = d.start; y <= d.end; y++) {
-    dynastyByYear[y] = d.name;
+  if (d.overlap) {
+    for (let y = d.start; y <= d.end; y++) {
+      dynastyByYear[y] = d.name;
+    }
+  }
+}
+// Second pass: write non-overlap dynasties (overwrite overlap where they coexist)
+for (const d of dynasties) {
+  if (!d.overlap) {
+    for (let y = d.start; y <= d.end; y++) {
+      dynastyByYear[y] = d.name;
+    }
   }
 }
 function getDynastyAtYear(y) {
@@ -552,24 +564,47 @@ function returnPoolNode(node){
 }
 
 // ============ Card Layout ============
+// Category → side mapping: above or below the timeline
+const CAT_SIDE = {"政治":"above","科技":"above","文化":"above","军事":"below","人物":"below","社会":"below"};
+
 function layoutCards(vis,vh,vw){
   const centerY=vh/2, gap=6;
   const above=[],below=[],results=[];
   const sorted=[...vis].sort((a,b)=>a.level!==b.level?a.level-b.level:a.year-b.year);
   sorted.forEach(item=>{
     const x=item.x, estW=item.level===1?145:item.level===2?125:105, cardH=item.level===1?48:40;
-    const cL=x-estW/2, cR=x+estW/2;let placed=false;
-    for(let tier=0;tier<5;tier++){
-      const stem=16+tier*(cardH+8), cB=centerY-4-stem, cT=cB-cardH;let ov=false;
-      for(const s of above){if(cL<s.r+gap&&cR>s.l-gap&&cT<s.b&&cB>s.b-s.h){ov=true;break}}
-      if(!ov){results.push({...item,pos:'above',stem,tier});above.push({l:cL,r:cR,b:cB,h:cardH});placed=true;break}
+    const cL=x-estW/2, cR=x+estW/2;
+    // Determine preferred side based on category
+    const prefSide = CAT_SIDE[item.event.category] || 'above';
+    let placed=false;
+
+    // Try preferred side first
+    if(prefSide==='above'){
+      for(let tier=0;tier<5;tier++){
+        const stem=16+tier*(cardH+8), cB=centerY-4-stem, cT=cB-cardH;let ov=false;
+        for(const s of above){if(cL<s.r+gap&&cR>s.l-gap&&cT<s.b&&cB>s.b-s.h){ov=true;break}}
+        if(!ov){results.push({...item,pos:'above',stem,tier});above.push({l:cL,r:cR,b:cB,h:cardH});placed=true;break}
+      }
+      // Fallback to opposite side if no room
+      if(!placed){for(let tier=0;tier<5;tier++){
+        const stem=16+tier*(cardH+8), cT=centerY+4+stem;let ov=false;
+        for(const s of below){if(cL<s.r+gap&&cR>s.l-gap&&cT<s.t+s.h&&cT+cardH>s.t){ov=true;break}}
+        if(!ov){results.push({...item,pos:'below',stem,tier});below.push({l:cL,r:cR,t:cT,h:cardH});placed=true;break}
+      }}
+    } else {
+      for(let tier=0;tier<5;tier++){
+        const stem=16+tier*(cardH+8), cT=centerY+4+stem;let ov=false;
+        for(const s of below){if(cL<s.r+gap&&cR>s.l-gap&&cT<s.t+s.h&&cT+cardH>s.t){ov=true;break}}
+        if(!ov){results.push({...item,pos:'below',stem,tier});below.push({l:cL,r:cR,t:cT,h:cardH});placed=true;break}
+      }
+      // Fallback to opposite side if no room
+      if(!placed){for(let tier=0;tier<5;tier++){
+        const stem=16+tier*(cardH+8), cB=centerY-4-stem, cT=cB-cardH;let ov=false;
+        for(const s of above){if(cL<s.r+gap&&cR>s.l-gap&&cT<s.b&&cB>s.b-s.h){ov=true;break}}
+        if(!ov){results.push({...item,pos:'above',stem,tier});above.push({l:cL,r:cR,b:cB,h:cardH});placed=true;break}
+      }}
     }
-    if(!placed){for(let tier=0;tier<5;tier++){
-      const stem=16+tier*(cardH+8), cT=centerY+4+stem;let ov=false;
-      for(const s of below){if(cL<s.r+gap&&cR>s.l-gap&&cT<s.t+s.h&&cT+cardH>s.t){ov=true;break}}
-      if(!ov){results.push({...item,pos:'below',stem,tier});below.push({l:cL,r:cR,t:cT,h:cardH});placed=true;break}
-    }}
-    if(!placed) results.push({...item,pos:'above',stem:16,tier:0});
+    if(!placed) results.push({...item,pos:prefSide,stem:16,tier:0});
   });
   return results;
 }
