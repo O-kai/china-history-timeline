@@ -38,6 +38,13 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 .star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--dur) ease-in-out infinite alternate}
 @keyframes twinkle{0%{opacity:0.2}100%{opacity:0.8}}
 
+/* ===== Dynasty Nav Bar ===== */
+.dynasty-nav{position:fixed;top:46px;left:0;right:0;height:28px;background:linear-gradient(180deg,rgba(10,10,20,0.97) 0%,rgba(10,10,20,0.85) 80%,transparent 100%);display:flex;align-items:center;gap:0;padding:0 4px;z-index:99;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none}
+.dynasty-nav::-webkit-scrollbar{display:none}
+.dynasty-nav-item{font-size:10px;padding:3px 7px;color:var(--text-muted);cursor:pointer;border-radius:4px;white-space:nowrap;transition:all 0.2s;flex-shrink:0;border:1px solid transparent;letter-spacing:1px}
+.dynasty-nav-item:hover{color:var(--text-secondary);background:rgba(201,169,110,0.06)}
+.dynasty-nav-item.focus{color:var(--gold);border-color:var(--border-gold);background:rgba(201,169,110,0.08)}
+
 .header{position:fixed;top:0;left:0;right:0;height:46px;background:linear-gradient(180deg,rgba(10,10,20,0.97) 0%,rgba(10,10,20,0.8) 80%,transparent 100%);display:flex;align-items:center;gap:8px;padding:0 12px;z-index:100}
 .header-title{font-size:14px;color:var(--gold);letter-spacing:3px;font-weight:300;white-space:nowrap}
 .search-box{flex:1;max-width:240px;position:relative}
@@ -67,6 +74,9 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 .density-slider::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--gold);border-radius:50%;cursor:pointer}
 .density-slider::-moz-range-thumb{width:12px;height:12px;background:var(--gold);border-radius:50%;cursor:pointer;border:none}
 
+/* ===== Focus Indicator ===== */
+.focus-indicator{position:fixed;top:78px;left:50%;transform:translateX(-50%);background:rgba(10,10,20,0.92);border:1px solid var(--border-gold);border-radius:12px;padding:2px 14px;font-size:11px;color:var(--gold);z-index:99;pointer-events:none;transition:opacity 0.3s;letter-spacing:2px;white-space:nowrap}
+
 .filter-bar{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background:rgba(10,10,20,0.92);border:1px solid var(--border-gold);border-radius:16px;padding:3px 8px;z-index:100}
 .filter-chip{font-size:9px;padding:2px 7px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all 0.2s;white-space:nowrap}
 .filter-chip.active{border-color:currentColor}
@@ -92,10 +102,15 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 .timeline-canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 
 .timeline-line{position:absolute;top:50%;height:2px;transform:translateY(-1px);pointer-events:none;background:linear-gradient(90deg,transparent 0%,var(--gold-dark) 3%,var(--gold) 20%,var(--gold-light) 50%,var(--gold) 80%,var(--gold-dark) 97%,transparent 100%);box-shadow:0 0 8px var(--glow-gold),0 0 20px rgba(201,169,110,0.05)}
-.dynasty-band{position:absolute;height:40px;transform:translateY(-20px);pointer-events:none;border-radius:2px;opacity:0.04;transition:opacity 0.3s}
-.dynasty-label{position:absolute;transform:translateY(30px);text-align:center;pointer-events:none}
-.dynasty-label span{font-size:10px;color:var(--gold);opacity:0.35;letter-spacing:3px;white-space:nowrap;font-weight:300}
-.dynasty-divider{position:absolute;top:50%;width:8px;height:8px;background:var(--gold);transform:translate(-50%,-50%) rotate(45deg);opacity:0.3;z-index:2;box-shadow:0 0 6px var(--glow-gold)}
+
+/* ===== Dynasty Bands (v1.1 enhanced) ===== */
+.dynasty-band{position:absolute;pointer-events:none;transition:opacity 0.4s}
+.dynasty-band-upper{border-radius:3px 3px 0 0}
+.dynasty-band-lower{border-radius:0 0 3px 3px}
+.dynasty-label{position:absolute;text-align:center;pointer-events:none;transition:opacity 0.3s}
+.dynasty-label span{font-size:10px;color:var(--gold);letter-spacing:3px;white-space:nowrap;font-weight:300;transition:all 0.3s}
+.dynasty-label.focus span{font-size:13px;font-weight:500;letter-spacing:4px}
+.dynasty-divider{position:absolute;top:50%;width:1px;transform:translateX(-50%);z-index:2;transition:opacity 0.3s}
 
 .tick{position:absolute;pointer-events:none}
 .tick-line{width:1px;position:absolute;left:0}
@@ -104,7 +119,7 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 .tick.major .tick-label{font-size:9px;color:var(--text-secondary)}
 .tick.minor .tick-line{background:rgba(201,169,110,0.08)}
 
-.event-node{position:absolute;cursor:pointer;z-index:3;will-change:transform}
+.event-node{position:absolute;cursor:pointer;z-index:3;will-change:transform;transition:opacity 0.3s}
 .event-node.active{z-index:50}
 @media(hover:hover){
   .event-node:hover{z-index:45}
@@ -183,6 +198,8 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
   .header-title{font-size:12px;letter-spacing:2px}
   .search-input{font-size:10px;padding:3px 8px 3px 22px}
   .btn-home{top:44px;width:30px;height:30px;font-size:13px}
+  .dynasty-nav{top:38px;height:24px}
+  .focus-indicator{top:66px;font-size:10px}
   .filter-bar{bottom:6px;padding:2px 5px}
   .filter-chip{font-size:8px;padding:1px 5px}
   .scale-bar{bottom:28px}
@@ -217,6 +234,11 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
     <button class="btn" onclick="toggleFullscreen()">全屏</button>
   </div>
 </div>
+
+<!-- Dynasty Quick Nav Bar -->
+<div class="dynasty-nav" id="dynastyNav"></div>
+
+<div class="focus-indicator" id="focusIndicator"></div>
 
 <button class="btn-home" id="btnHome" onclick="goHome()" title="回到当前位置">⌂</button>
 
@@ -291,54 +313,122 @@ const CATS={"政治":{c:"#e74c3c",s:"cat-politics"},"军事":{c:"#e67e22",s:"cat
 // ============ 数据初始化 ============
 const D = typeof TIMELINE_DATA !== 'undefined' ? TIMELINE_DATA : [];
 const events=D.map(d=>({year:d[0],month:d[1],day:d[2],title:d[3],summary:d[4],detail:d[5],context:d[6],image:d[7],dynasty:d[8],level:d[9],category:d[10]}));
-
-// Build index for O(1) lookup
 const eventIndex=new Map();
 events.forEach((e,i)=>eventIndex.set(e,i));
-
 document.getElementById('loadingScreen').classList.add('hidden');
 
-// ============ 朝代 ============
+// ============ 朝代数据 v1.1（含交错标记+色调） ============
 const dynasties=[
-  {name:"夏",start:-2070,end:-1600,color:"#8B7355"},
-  {name:"商",start:-1600,end:-1046,color:"#A0522D"},
-  {name:"西周",start:-1046,end:-771,color:"#6B8E23"},
-  {name:"东周",start:-770,end:-256,color:"#556B2F"},
-  {name:"秦",start:-221,end:-207,color:"#2F4F4F"},
-  {name:"西汉",start:-202,end:8,color:"#4682B4"},
-  {name:"新",start:8,end:25,color:"#5F9EA0"},
-  {name:"东汉",start:25,end:220,color:"#4682B4"},
-  {name:"三国",start:220,end:280,color:"#8B4513"},
-  {name:"西晋",start:265,end:316,color:"#DAA520"},
-  {name:"东晋十六国",start:317,end:420,color:"#B8860B"},
-  {name:"南北朝",start:420,end:589,color:"#696969"},
-  {name:"隋",start:581,end:618,color:"#CD853F"},
-  {name:"唐",start:618,end:907,color:"#DC143C"},
-  {name:"五代十国",start:907,end:960,color:"#8B8682"},
-  {name:"北宋",start:960,end:1127,color:"#9370DB"},
-  {name:"南宋",start:1127,end:1279,color:"#7B68EE"},
-  {name:"元",start:1271,end:1368,color:"#4169E1"},
-  {name:"明",start:1368,end:1644,color:"#B22222"},
-  {name:"清",start:1644,end:1912,color:"#FFD700"},
-  {name:"民国",start:1912,end:1949,color:"#3CB371"},
-  {name:"新中国",start:1949,end:2025,color:"#FF4500"},
+  {name:"夏",start:-2070,end:-1600,color:"#8B7355",rgb:"139,115,85",overlap:false},
+  {name:"商",start:-1600,end:-1046,color:"#A0522D",rgb:"160,82,45",overlap:false},
+  {name:"西周",start:-1046,end:-771,color:"#6B8E23",rgb:"107,142,35",overlap:false},
+  {name:"东周",start:-770,end:-256,color:"#556B2F",rgb:"85,107,47",overlap:false},
+  {name:"秦",start:-221,end:-207,color:"#2F4F4F",rgb:"47,79,79",overlap:false},
+  {name:"西汉",start:-202,end:8,color:"#4682B4",rgb:"70,130,180",overlap:false},
+  {name:"新",start:8,end:25,color:"#5F9EA0",rgb:"95,158,160",overlap:true},
+  {name:"东汉",start:25,end:220,color:"#4682B4",rgb:"70,130,180",overlap:false},
+  {name:"三国",start:220,end:280,color:"#8B4513",rgb:"139,69,19",overlap:true},
+  {name:"西晋",start:265,end:316,color:"#DAA520",rgb:"218,165,32",overlap:true},
+  {name:"东晋十六国",start:317,end:420,color:"#B8860B",rgb:"184,134,11",overlap:true},
+  {name:"南北朝",start:420,end:589,color:"#696969",rgb:"105,105,105",overlap:true},
+  {name:"隋",start:581,end:618,color:"#CD853F",rgb:"205,133,63",overlap:true},
+  {name:"唐",start:618,end:907,color:"#DC143C",rgb:"220,20,60",overlap:false},
+  {name:"五代十国",start:907,end:960,color:"#8B8682",rgb:"139,134,130",overlap:true},
+  {name:"北宋",start:960,end:1127,color:"#9370DB",rgb:"147,112,219",overlap:false},
+  {name:"南宋",start:1127,end:1279,color:"#7B68EE",rgb:"123,104,238",overlap:false},
+  {name:"辽",start:907,end:1125,color:"#8B6914",rgb:"139,105,20",overlap:true},
+  {name:"金",start:1115,end:1234,color:"#BDB76B",rgb:"189,183,107",overlap:true},
+  {name:"西夏",start:1038,end:1227,color:"#9ACD32",rgb:"154,205,50",overlap:true},
+  {name:"元",start:1271,end:1368,color:"#4169E1",rgb:"65,105,225",overlap:false},
+  {name:"明",start:1368,end:1644,color:"#B22222",rgb:"178,34,34",overlap:false},
+  {name:"清",start:1644,end:1912,color:"#DAA520",rgb:"218,165,32",overlap:false},
+  {name:"民国",start:1912,end:1949,color:"#3CB371",rgb:"60,179,113",overlap:false},
+  {name:"新中国",start:1949,end:2025,color:"#FF4500",rgb:"255,69,0",overlap:false},
 ];
+
+// Build lookup: year → dynasty name
+const dynastyByYear = [];
+for (const d of dynasties) {
+  for (let y = d.start; y <= d.end; y++) {
+    dynastyByYear[y] = d.name;
+  }
+}
+function getDynastyAtYear(y) {
+  if (y < -2070) return dynasties[0].name;
+  if (y > 2025) return dynasties[dynasties.length-1].name;
+  return dynastyByYear[y] || '';
+}
+function getDynastyObj(name) {
+  return dynasties.find(d => d.name === name);
+}
+
+// ============ Dynasty Nav Bar ============
+(function(){
+  const nav=document.getElementById('dynastyNav');
+  dynasties.forEach(d=>{
+    const el=document.createElement('div');
+    el.className='dynasty-nav-item';
+    el.textContent=d.name;
+    el.dataset.dynasty=d.name;
+    el.addEventListener('click',()=>jumpToDynasty(d.name));
+    nav.appendChild(el);
+  });
+})();
+
+function jumpToDynasty(name){
+  const d=getDynastyObj(name);if(!d)return;
+  const centerYear=(d.start+d.end)/2;
+  // Calculate appropriate pixelsPerYear: fit the dynasty in ~60% of viewport width
+  const vw=viewport.clientWidth;
+  const dynastySpan=d.end-d.start;
+  const targetPPY=Math.max(0.15, (vw*0.6)/Math.max(dynastySpan,1));
+  const clampedPPY=Math.min(30,Math.max(0.01,targetPPY));
+  animateTo(centerYear, clampedPPY);
+}
+
+// ============ Focus Weight System ============
+let currentFocusDynasty = '';
+
+function calculateFocusWeight(eventYear, centerYear) {
+  const focusDynasty = getDynastyAtYear(Math.round(centerYear));
+  const eventDynasty = getDynastyAtYear(eventYear);
+
+  if (focusDynasty === eventDynasty) return 1.0;
+
+  // Find distance in dynasty list
+  const focusIdx = dynasties.findIndex(d => d.name === focusDynasty);
+  const eventIdx = dynasties.findIndex(d => d.name === eventDynasty);
+
+  if (focusIdx < 0 || eventIdx < 0) return 0.4;
+
+  const dist = Math.abs(focusIdx - eventIdx);
+  if (dist === 1) return 0.65;
+  if (dist === 2) return 0.45;
+  return Math.max(0.2, 0.4 - dist * 0.05);
+}
+
+function getBandOpacity(dynastyName, centerYear) {
+  const focusDynasty = getDynastyAtYear(Math.round(centerYear));
+  if (focusDynasty === dynastyName) return 1.0;
+
+  const focusIdx = dynasties.findIndex(d => d.name === focusDynasty);
+  const bandIdx = dynasties.findIndex(d => d.name === dynastyName);
+  if (focusIdx < 0 || bandIdx < 0) return 0.3;
+
+  const dist = Math.abs(focusIdx - bandIdx);
+  if (dist === 1) return 0.7;
+  if (dist === 2) return 0.5;
+  return Math.max(0.15, 0.35 - dist * 0.04);
+}
 
 // ============ 数据范围自适应 ============
 let DATA_MIN, DATA_MAX;
 (function(){
   if(events.length===0){DATA_MIN=-2070;DATA_MAX=2025;return}
-  DATA_MIN=events[0].year;
-  DATA_MAX=events[0].year;
-  for(const e of events){
-    if(e.year<DATA_MIN)DATA_MIN=e.year;
-    if(e.year>DATA_MAX)DATA_MAX=e.year;
-  }
-  // Add small padding (5% of range)
-  const range=DATA_MAX-DATA_MIN;
-  const pad=Math.max(range*0.03,50);
-  DATA_MIN=Math.floor(DATA_MIN-pad);
-  DATA_MAX=Math.ceil(DATA_MAX+pad);
+  DATA_MIN=events[0].year;DATA_MAX=events[0].year;
+  for(const e of events){if(e.year<DATA_MIN)DATA_MIN=e.year;if(e.year>DATA_MAX)DATA_MAX=e.year}
+  const range=DATA_MAX-DATA_MIN;const pad=Math.max(range*0.03,50);
+  DATA_MIN=Math.floor(DATA_MIN-pad);DATA_MAX=Math.ceil(DATA_MAX+pad);
 })();
 
 // ============ DOM ============
@@ -353,6 +443,8 @@ const scaleLine=document.getElementById('scaleLine');
 const scaleLabel=document.getElementById('scaleLabel');
 const densitySlider=document.getElementById('densitySlider');
 const densityValueEl=document.getElementById('densityValue');
+const focusIndicator=document.getElementById('focusIndicator');
+const dynastyNavEl=document.getElementById('dynastyNav');
 
 // ============ State ============
 let offsetX=0, pixelsPerYear=0.15;
@@ -366,15 +458,9 @@ let densityMultiplier=1.0;
 // ============ rAF Batching ============
 let renderPending=false;
 function requestRender(){
-  if(!renderPending){
-    renderPending=true;
-    requestAnimationFrame(doRender);
-  }
+  if(!renderPending){renderPending=true;requestAnimationFrame(doRender)}
 }
-function doRender(){
-  renderPending=false;
-  render();
-}
+function doRender(){renderPending=false;render()}
 
 // ============ Helpers ============
 function getZoomLevel(){if(pixelsPerYear<0.25)return 1;if(pixelsPerYear<1.2)return 2;return 3}
@@ -386,54 +472,56 @@ function formatYearFull(e){let s=formatYear(e.year);if(e.month)s+=e.month+'月';
 function getCatColor(c){return CATS[c]?CATS[c].c:'#c9a96e'}
 function getCatCSS(c){return CATS[c]?CATS[c].s:''}
 
-// ============ Smart Density ============
+// ============ Smart Density with Focus Weight ============
 function getMaxVisibleEvents(vw, zl){
-  // Base density: how many events can fit comfortably
-  // At macro: fewer events, at micro: more events
   const base = zl===1 ? Math.floor(vw/80) : zl===2 ? Math.floor(vw/50) : Math.floor(vw/35);
   return Math.max(5, Math.floor(base * densityMultiplier));
 }
 
-function selectVisibleEvents(visS, visE, vw){
+function selectVisibleEvents(visS, visE, vw, centerYear){
   const zl = getZoomLevel();
   const maxEvents = getMaxVisibleEvents(vw, zl);
+  const focusDynasty = getDynastyAtYear(Math.round(centerYear));
 
-  // Filter by category and level
   let candidates = events.filter(e=>{
     if(!activeCategories.has(e.category)) return false;
     if(zl < e.level) return false;
     return e.year >= visS && e.year <= visE;
   });
 
-  // If within budget, show all
   if(candidates.length <= maxEvents) return candidates;
 
-  // Priority sort: level 1 first, then level 2, then level 3
-  // Within same level, spread evenly by picking from time-sorted list
-  candidates.sort((a,b)=>a.level-b.level || a.year-b.year);
+  // Sort by focus weight first, then level, then year
+  candidates.sort((a,b)=>{
+    const wa = calculateFocusWeight(a.year, centerYear);
+    const wb = calculateFocusWeight(b.year, centerYear);
+    if(wa !== wb) return wb - wa; // higher weight first
+    if(a.level !== b.level) return a.level - b.level;
+    return a.year - b.year;
+  });
 
-  // Take all level 1
-  const level1 = candidates.filter(e=>e.level===1);
-  if(level1.length >= maxEvents) {
-    // Even spread level 1
-    return spreadPick(level1, maxEvents);
+  // Take events prioritizing focus dynasty
+  const focusEvents = candidates.filter(e => getDynastyAtYear(e.year) === focusDynasty);
+  const nearEvents = candidates.filter(e => getDynastyAtYear(e.year) !== focusDynasty);
+
+  // All focus dynasty events (respecting level filter)
+  const result = [...focusEvents];
+
+  // Fill remaining with nearby dynasty events, spread evenly
+  if(result.length < maxEvents && nearEvents.length > 0){
+    const remaining = maxEvents - result.length;
+    // Sort nearby by distance to focus
+    const sorted = [...nearEvents].sort((a,b) => {
+      return calculateFocusWeight(a.year, centerYear) > calculateFocusWeight(b.year, centerYear) ? -1 : 1;
+    });
+    result.push(...spreadPick(sorted, remaining));
   }
 
-  const level2 = candidates.filter(e=>e.level===2);
-  const remaining2 = maxEvents - level1.length;
-  if(remaining2 <= 0) return level1.slice(0, maxEvents);
-
-  const picked2 = spreadPick(level2, Math.min(remaining2, level2.length));
-  const combined = level1.concat(picked2);
-  if(combined.length >= maxEvents) return combined.slice(0, maxEvents);
-
-  const level3 = candidates.filter(e=>e.level===3);
-  const remaining3 = maxEvents - combined.length;
-  const picked3 = spreadPick(level3, Math.min(remaining3, level3.length));
-  return combined.concat(picked3);
+  // Re-sort by year for display
+  result.sort((a,b) => a.year - b.year);
+  return result.slice(0, maxEvents);
 }
 
-// Pick N items evenly spaced from array
 function spreadPick(arr, n){
   if(n>=arr.length) return arr;
   if(n<=0) return [];
@@ -450,31 +538,23 @@ const nodePool=[];
 const activeNodes=new Map();
 
 function getPoolNode(){
-  if(nodePool.length>0){
-    const node=nodePool.pop();
-    node.style.display='';
-    return node;
-  }
-  const node=document.createElement('div');
-  node.className='event-node';
+  if(nodePool.length>0){const node=nodePool.pop();node.style.display='';return node}
+  const node=document.createElement('div');node.className='event-node';
   node.innerHTML='<div class="event-dot"></div><div class="event-stem"></div><div class="event-card"><div class="event-card-inner"><div class="event-card-row"><span class="event-year"></span><span class="event-title"></span></div><div class="event-card-row"><span class="event-cat-tag"></span><span class="event-dynasty"></span></div><div class="event-summary"></div><div class="event-detail-btn">查看详情 →</div></div></div>';
   return node;
 }
 
 function returnPoolNode(node){
-  node.style.display='none';
-  node.classList.remove('active');
+  node.style.display='none';node.classList.remove('active');node.style.opacity='';
   const card=node.querySelector('.event-card');
   if(card){card.classList.remove('expanded');card.style.cssText=''}
-  node.style.transform='';
-  nodePool.push(node);
+  node.style.transform='';nodePool.push(node);
 }
 
 // ============ Card Layout ============
 function layoutCards(vis,vh,vw){
   const centerY=vh/2, gap=6;
   const above=[],below=[],results=[];
-  // Sort by level then year for consistent layout
   const sorted=[...vis].sort((a,b)=>a.level!==b.level?a.level-b.level:a.year-b.year);
   sorted.forEach(item=>{
     const x=item.x, estW=item.level===1?145:item.level===2?125:105, cardH=item.level===1?48:40;
@@ -499,19 +579,72 @@ function render(){
   const vw=viewport.clientWidth, vh=viewport.clientHeight, centerY=vh/2;
   const zl=getZoomLevel();
   const visS=xToYear(0), visE=xToYear(vw);
+  const centerYear=(visS+visE)/2;
+
+  // Update focus dynasty
+  const focusDynasty = getDynastyAtYear(Math.round(centerYear));
+  currentFocusDynasty = focusDynasty;
+
+  // Update focus indicator
+  focusIndicator.textContent = focusDynasty || '';
+  focusIndicator.style.opacity = focusDynasty ? '1' : '0';
+
+  // Update dynasty nav highlight
+  document.querySelectorAll('.dynasty-nav-item').forEach(el => {
+    el.classList.toggle('focus', el.dataset.dynasty === focusDynasty);
+  });
+
+  // Auto-scroll dynasty nav to show focused dynasty
+  const focusNavEl = dynastyNavEl.querySelector('.dynasty-nav-item.focus');
+  if(focusNavEl){
+    const navRect = dynastyNavEl.getBoundingClientRect();
+    const elRect = focusNavEl.getBoundingClientRect();
+    if(elRect.left < navRect.left || elRect.right > navRect.right){
+      focusNavEl.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+    }
+  }
+
   let html='';
 
   // --- Background: timeline line ---
   const lL=yearToX(Math.max(visS-100,DATA_MIN)), lR=yearToX(Math.min(visE+100,DATA_MAX));
   if(lR>0&&lL<vw) html+='<div class="timeline-line" style="left:'+Math.max(0,lL)+'px;width:'+(Math.min(vw,lR)-Math.max(0,lL))+'px;top:'+centerY+'px"></div>';
 
-  // --- Background: dynasty bands + labels ---
+  // --- Background: Dynasty bands (v1.1 enhanced with focus weight) ---
+  const bandH = Math.min(vh * 0.18, 120);
+
   dynasties.forEach(d=>{
     const x1=yearToX(d.start), x2=yearToX(d.end);
     if(x2<0||x1>vw) return;
-    html+='<div class="dynasty-band" style="left:'+x1+'px;width:'+Math.max(x2-x1,2)+'px;top:'+centerY+'px;background:'+d.color+'"></div>';
-    html+='<div class="dynasty-divider" style="left:'+x1+'px;top:'+centerY+'px"></div>';
-    if(zl<=2){const cx=(x1+x2)/2;if(cx>-80&&cx<vw+80) html+='<div class="dynasty-label" style="left:'+cx+'px;top:'+centerY+'px"><span>'+d.name+'</span></div>'}
+
+    const w = Math.max(x2-x1, 2);
+    const bandOpacity = getBandOpacity(d.name, centerYear);
+    const isFocus = d.name === focusDynasty;
+    const rgb = d.rgb;
+
+    // Upper band (above center line)
+    const upperAlpha = isFocus ? 0.18 : 0.05 * bandOpacity;
+    const lowerAlpha = isFocus ? 0.14 : 0.04 * bandOpacity;
+
+    html+='<div class="dynasty-band dynasty-band-upper" style="left:'+x1+'px;width:'+w+'px;top:'+(centerY-bandH)+'px;height:'+bandH+'px;background:rgba('+rgb+','+upperAlpha+')"></div>';
+
+    // Lower band (below center line)
+    html+='<div class="dynasty-band dynasty-band-lower" style="left:'+x1+'px;width:'+w+'px;top:'+centerY+'px;height:'+bandH+'px;background:rgba('+rgb+','+lowerAlpha+')"></div>';
+
+    // Divider line at dynasty start
+    const divOpacity = isFocus ? 0.6 : 0.15 * bandOpacity;
+    html+='<div class="dynasty-divider" style="left:'+x1+'px;top:'+(centerY-bandH)+'px;height:'+(bandH*2)+'px;background:rgba('+rgb+','+divOpacity+')"></div>';
+
+    // Dynasty label
+    if(zl<=2 || isFocus){
+      const cx=(x1+x2)/2;
+      if(cx>-80&&cx<vw+80){
+        const labelOpacity = isFocus ? 1 : 0.2 + bandOpacity * 0.3;
+        const labelClass = isFocus ? 'dynasty-label focus' : 'dynasty-label';
+        const labelTop = isFocus ? (centerY - bandH - 22) : (centerY - bandH + 6);
+        html+='<div class="'+labelClass+'" style="left:'+cx+'px;top:'+labelTop+'px;opacity:'+labelOpacity+'"><span>'+d.name+'</span></div>';
+      }
+    }
   });
 
   // --- Background: ticks ---
@@ -527,12 +660,11 @@ function render(){
     html+='</div>';
   }
 
-  // --- Events with smart density ---
-  const visible=selectVisibleEvents(visS-50, visE+50, vw);
-  const items=visible.map(e=>({event:e, idx:eventIndex.get(e), x:yearToX(e.year), level:e.level}));
+  // --- Events with focus-weighted density ---
+  const visible=selectVisibleEvents(visS-50, visE+50, vw, centerYear);
+  const items=visible.map(e=>({event:e, idx:eventIndex.get(e), x:yearToX(e.year), level:e.level, weight:calculateFocusWeight(e.year, centerYear)}));
   const laid=layoutCards(items,vh,vw);
 
-  // Determine which events should be visible
   const newVisible=new Map();
   laid.forEach(item=>{newVisible.set(item.idx, item)});
 
@@ -547,23 +679,22 @@ function render(){
 
   // Add/update visible nodes
   for(const [idx, layout] of newVisible){
-    const e=layout.event, x=layout.x, pos=layout.pos, stem=layout.stem;
+    const e=layout.event, x=layout.x, pos=layout.pos, stem=layout.stem, weight=layout.weight;
     const cc=getCatColor(e.category), css=getCatCSS(e.category);
     const yr2=formatYearFull(e);
     const isExp=expandedCard===idx;
 
     let node=activeNodes.get(idx);
     if(!node){
-      node=getPoolNode();
-      node.dataset.idx=idx;
-      canvas.appendChild(node);
-      activeNodes.set(idx, node);
+      node=getPoolNode();node.dataset.idx=idx;canvas.appendChild(node);activeNodes.set(idx, node);
     }
 
-    // Position via CSS transform (GPU-accelerated)
+    // Position via CSS transform
     node.style.transform='translate('+x+'px,'+centerY+'px)';
-    node.style.left='0';
-    node.style.top='0';
+    node.style.left='0';node.style.top='0';
+
+    // Apply focus weight to opacity
+    node.style.opacity = weight;
 
     if(isExp) node.classList.add('active');
     else node.classList.remove('active');
@@ -571,14 +702,12 @@ function render(){
     // Dot
     const dot=node.querySelector('.event-dot');
     dot.className='event-dot level-'+e.level;
-    dot.style.background=cc;
-    dot.style.color=cc;
+    dot.style.background=cc;dot.style.color=cc;
 
     // Stem
     const stemEl=node.querySelector('.event-stem');
     stemEl.className='event-stem '+pos;
-    stemEl.style.height=stem+'px';
-    stemEl.style.background=cc;
+    stemEl.style.height=stem+'px';stemEl.style.background=cc;
 
     // Card
     const card=node.querySelector('.event-card');
@@ -588,48 +717,25 @@ function render(){
     card.querySelector('.event-year').textContent=yr2;
     card.querySelector('.event-title').textContent=e.title;
     const catTag=card.querySelector('.event-cat-tag');
-    catTag.textContent=e.category;
-    catTag.style.color=cc;
-    catTag.style.background=cc+'15';
+    catTag.textContent=e.category;catTag.style.color=cc;catTag.style.background=cc+'15';
     const dynEl=card.querySelector('.event-dynasty');
-    if(zl>=2){dynEl.textContent=e.dynasty;dynEl.style.display=''}
+    if(zl>=2||weight>=0.65){dynEl.textContent=e.dynasty;dynEl.style.display=''}
     else{dynEl.style.display='none'}
     const sumEl=card.querySelector('.event-summary');
     const detBtn=card.querySelector('.event-detail-btn');
-    if(isExp){
-      sumEl.textContent=e.summary;sumEl.style.display='block';
-      detBtn.style.color=cc;detBtn.style.display='block';
-    }else{
-      sumEl.style.display='none';detBtn.style.display='none';
-    }
+    if(isExp){sumEl.textContent=e.summary;sumEl.style.display='block';detBtn.style.color=cc;detBtn.style.display='block'}
+    else{sumEl.style.display='none';detBtn.style.display='none'}
   }
 
-  // Insert background HTML (ticks, dynasty bands, etc.) - keep event nodes, replace bg
-  // Collect bg elements into a container approach
-  // We need to preserve event nodes while updating bg
+  // Insert background HTML
   const bgContainer=document.createElement('div');
   bgContainer.innerHTML=html;
-
-  // Remove old bg elements (not event-node)
   const toRemove=[];
-  for(const child of canvas.children){
-    if(!child.classList.contains('event-node')){
-      toRemove.push(child);
-    }
-  }
+  for(const child of canvas.children){if(!child.classList.contains('event-node'))toRemove.push(child)}
   toRemove.forEach(el=>canvas.removeChild(el));
-
-  // Insert new bg elements before event nodes
   const firstNode=canvas.querySelector('.event-node');
-  if(firstNode){
-    while(bgContainer.firstChild){
-      canvas.insertBefore(bgContainer.firstChild, firstNode);
-    }
-  }else{
-    while(bgContainer.firstChild){
-      canvas.appendChild(bgContainer.firstChild);
-    }
-  }
+  if(firstNode){while(bgContainer.firstChild)canvas.insertBefore(bgContainer.firstChild,firstNode)}
+  else{while(bgContainer.firstChild)canvas.appendChild(bgContainer.firstChild)}
 
   updateScaleBar();
 }
@@ -644,22 +750,13 @@ function updateScaleBar(){
   scaleLabel.textContent=step>=1000?(step/1000)+'千年':step+'年';
 }
 
-// ============ Click Handling (Event Delegation) ============
+// ============ Click Handling ============
 canvas.addEventListener('click',function(ev){
   const node=ev.target.closest('.event-node');
-  if(node){
-    const idx=parseInt(node.dataset.idx);
-    ev.stopPropagation();
-    if(expandedCard===idx) showDetail(idx);
-    else{expandedCard=idx;requestRender()}
-    return;
-  }
+  if(node){const idx=parseInt(node.dataset.idx);ev.stopPropagation();if(expandedCard===idx)showDetail(idx);else{expandedCard=idx;requestRender()}return}
 });
-
 viewport.addEventListener('click',function(ev){
-  if(expandedCard!==null&&!ev.target.closest('.event-card')&&!ev.target.closest('.event-node')){
-    expandedCard=null;requestRender();
-  }
+  if(expandedCard!==null&&!ev.target.closest('.event-card')&&!ev.target.closest('.event-node')){expandedCard=null;requestRender()}
 });
 
 // ============ Detail ============
@@ -689,19 +786,16 @@ document.addEventListener('click',e=>{if(!e.target.closest('.search-box'))search
 
 // ============ Navigation ============
 function goHome(){
-  // Calculate initial offset based on actual data center
   const centerYear=(DATA_MIN+DATA_MAX)/2;
   offsetX=viewport.clientWidth/2-centerYear*pixelsPerYear;
-  expandedCard=null;
-  requestRender();
+  expandedCard=null;requestRender();
 }
 function animateTo(ty,tppy){
   const vw=viewport.clientWidth,so=offsetX,sp=pixelsPerYear,eo=vw/2-ty*tppy,ep=tppy,dur=400,st=performance.now();
   function step(now){
     const t=Math.min((now-st)/dur,1),ease=1-Math.pow(1-t,3);
     pixelsPerYear=sp+(ep-sp)*ease;offsetX=so+(eo-so)*ease;
-    requestRender();
-    if(t<1)requestAnimationFrame(step);
+    requestRender();if(t<1)requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
 }
@@ -750,8 +844,7 @@ viewport.addEventListener('touchmove',e=>{
       np=Math.max(0.01,Math.min(30,np));pixelsPerYear=np;
       offsetX=pinchCenterX-pinchCenterYear*pixelsPerYear;
     }
-    requestRender();
-    showZI();
+    requestRender();showZI();
   }
   else if(touchState==='dragging'&&e.touches.length===2){
     touchState='pinching';pinchConfirmed=false;
@@ -775,46 +868,36 @@ viewport.addEventListener('touchend',e=>{
   else if(touchState==='dragging'){
     if(e.touches.length===0){
       if(!touchMoved){
-        // Tap detection: find event-node under touch point
         const touch=e.changedTouches[0];
         const node=document.elementFromPoint(touch.clientX,touch.clientY);
         const eventNode=node?node.closest('.event-node'):null;
         if(eventNode){
           const idx=parseInt(eventNode.dataset.idx);
-          if(expandedCard===idx) showDetail(idx);
-          else{expandedCard=idx;requestRender()}
+          if(expandedCard===idx) showDetail(idx);else{expandedCard=idx;requestRender()}
         }else if(expandedCard!==null&&!node?.closest('.event-card')&&!node?.closest('.event-node')){
           expandedCard=null;requestRender();
         }
-      }else{
-        requestAnimationFrame(inertia);
-      }
+      }else{requestAnimationFrame(inertia)}
       touchState='idle';
     }
   }
 });
 
 function inertia(){
-  if(Math.abs(velocity)>0.3){
-    offsetX+=velocity;velocity*=0.93;
-    requestRender();
-    requestAnimationFrame(inertia);
-  }
+  if(Math.abs(velocity)>0.3){offsetX+=velocity;velocity*=0.93;requestRender();requestAnimationFrame(inertia)}
 }
 
 // ============ Mouse ============
 let mDown=false, mSX=0, mSO=0;
 viewport.addEventListener('mousedown',e=>{
-  if(e.target.closest('.event-card,.btn,.filter-chip,.density-control'))return;
+  if(e.target.closest('.event-card,.btn,.filter-chip,.density-control,.dynasty-nav'))return;
   mDown=true;mSX=e.clientX;mSO=offsetX;velocity=0;lastPointerX=e.clientX;lastTime=Date.now();
 });
 viewport.addEventListener('mousemove',e=>{
-  if(!mDown)return;
-  offsetX=mSO+(e.clientX-mSX);
+  if(!mDown)return;offsetX=mSO+(e.clientX-mSX);
   const now=Date.now(),dt=now-lastTime;
   if(dt>0)velocity=(e.clientX-lastPointerX)/dt*16;
-  lastPointerX=e.clientX;lastTime=now;
-  requestRender();
+  lastPointerX=e.clientX;lastTime=now;requestRender();
 });
 viewport.addEventListener('mouseup',()=>{mDown=false;requestAnimationFrame(inertia)});
 viewport.addEventListener('mouseleave',()=>{mDown=false});
@@ -824,8 +907,7 @@ viewport.addEventListener('wheel',e=>{
   e.preventDefault();const r=viewport.getBoundingClientRect(),mx=e.clientX-r.left,my=xToYear(mx);
   let np=pixelsPerYear*(e.deltaY>0?0.9:1.11);np=Math.max(0.01,Math.min(30,np));
   pixelsPerYear=np;offsetX=mx-my*pixelsPerYear;
-  requestRender();
-  showZI();
+  requestRender();showZI();
 },{passive:false});
 
 // ============ Zoom Indicator ============
@@ -836,9 +918,7 @@ function toggleFullscreen(){if(!document.fullscreenElement)document.documentElem
 
 // ============ Density Slider ============
 densitySlider.addEventListener('input',function(){
-  densityMultiplier=parseFloat(this.value);
-  densityValueEl.textContent=densityMultiplier.toFixed(1)+'x';
-  requestRender();
+  densityMultiplier=parseFloat(this.value);densityValueEl.textContent=densityMultiplier.toFixed(1)+'x';requestRender();
 });
 
 // ============ Filters ============
@@ -859,7 +939,6 @@ document.querySelectorAll('.filter-chip').forEach(chip=>{
 });
 
 // ============ Init ============
-// Center on data range
 (function(){
   const centerYear=(DATA_MIN+DATA_MAX)/2;
   offsetX=viewport.clientWidth/2-centerYear*pixelsPerYear;
@@ -898,18 +977,15 @@ function closeFeedback(){
 }
 
 feedbackSubmit.addEventListener('click',()=>{
-  const text=feedbackText.value.trim();
-  if(!text)return;
+  const text=feedbackText.value.trim();if(!text)return;
   const contact=feedbackContact.value.trim();
-  const ua=navigator.userAgent;
-  const isMobile=/Mobi|Android|iPhone/i.test(ua);
+  const ua=navigator.userAgent;const isMobile=/Mobi|Android|iPhone/i.test(ua);
   const time=new Date().toLocaleString('zh-CN');
   const title='[反馈] '+text.slice(0,60);
-  const body=`## 用户反馈\n\n${text}\n\n---\n- **联系方式**: ${contact||'未提供'}\n- **设备**: ${isMobile?'移动端':'桌面端'}\n- **时间**: ${time}`;
+  const body='## 用户反馈\n\n'+text+'\n\n---\n- **联系方式**: '+(contact||'未提供')+'\n- **设备**: '+(isMobile?'移动端':'桌面端')+'\n- **时间**: '+time;
   const issueUrl='https://github.com/O-kai/china-history-timeline/issues/new?labels=feedback&title='+encodeURIComponent(title)+'&body='+encodeURIComponent(body);
   window.open(issueUrl,'_blank');
-  feedbackForm.style.display='none';
-  feedbackSuccess.style.display='block';
+  feedbackForm.style.display='none';feedbackSuccess.style.display='block';
 });
 </script>
 </body>
