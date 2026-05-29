@@ -1,6 +1,6 @@
 Page({
   data: {
-    url: 'https://o-kai.github.io/china-history-timeline/'
+    url: 'https://china-history-timeline.vercel.app/'
   },
   onLoad: function () {
     console.log('WebView loading:', this.data.url)
