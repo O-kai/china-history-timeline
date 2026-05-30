@@ -111,6 +111,13 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 .dynasty-label span{font-size:10px;color:var(--gold);letter-spacing:3px;white-space:nowrap;font-weight:300;transition:all 0.3s}
 .dynasty-label.focus span{font-size:13px;font-weight:500;letter-spacing:4px}
 .dynasty-divider{position:absolute;top:50%;width:1px;transform:translateX(-50%);z-index:2;transition:opacity 0.3s}
+/* Population curve */
+.pop-curve-svg{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.pop-curve{fill:none;stroke:var(--gold);stroke-width:1.5;opacity:0.35;transition:opacity 0.3s}
+.pop-curve-area{opacity:0.06;transition:opacity 0.3s}
+.pop-dot{fill:var(--gold);stroke:var(--gold);stroke-width:1;opacity:0.6;transition:opacity 0.3s,r 0.2s}
+.pop-dot-glow{fill:none;stroke:var(--gold);stroke-width:0.5;opacity:0.2}
+.pop-label{font-size:9px;fill:var(--gold);opacity:0.5;pointer-events:none;font-family:inherit}
 
 .tick{position:absolute;pointer-events:none}
 .tick-line{width:1px;position:absolute;left:0}
@@ -248,6 +255,11 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
   <span class="density-value" id="densityValue">1.0x</span>
 </div>
 
+<div class="density-control" style="bottom:100px;gap:4px">
+  <span class="density-label" style="font-size:7px">人口</span>
+  <button class="btn" id="popToggle" style="font-size:9px;padding:2px 6px;border-radius:4px" onclick="togglePopCurve()">📈</button>
+</div>
+
 <div class="timeline-viewport" id="viewport">
   <div class="timeline-canvas" id="canvas"></div>
 </div>
@@ -345,6 +357,35 @@ const dynasties=[
   {name:"民国",start:1912,end:1949,color:"#3CB371",rgb:"60,179,113",overlap:false},
   {name:"新中国",start:1949,end:2025,color:"#FF4500",rgb:"255,69,0",overlap:false},
 ];
+
+// ============ Historical Population Data (millions) ============
+// Based on scholarly estimates of China's population at key historical points
+const POP_DATA = [
+  {year:-2000,pop:13},{year:-1500,pop:15},{year:-1000,pop:20},{year:-700,pop:20},
+  {year:-400,pop:25},{year:-221,pop:20},{year:-1,pop:59},{year:57,pop:21},
+  {year:157,pop:56},{year:220,pop:16},{year:280,pop:24},{year:520,pop:50},
+  {year:609,pop:46},{year:755,pop:80},{year:960,pop:32},{year:1120,pop:120},
+  {year:1200,pop:115},{year:1290,pop:75},{year:1400,pop:65},{year:1500,pop:110},
+  {year:1600,pop:150},{year:1680,pop:120},{year:1740,pop:180},{year:1790,pop:300},
+  {year:1840,pop:410},{year:1870,pop:350},{year:1910,pop:430},{year:1930,pop:480},
+  {year:1950,pop:550},{year:1960,pop:660},{year:1970,pop:800},{year:1980,pop:980},
+  {year:1990,pop:1130},{year:2000,pop:1260},{year:2010,pop:1340},{year:2020,pop:1400}
+];
+const POP_MAX = 1400;
+
+// Interpolate population at any year
+function getPopAtYear(y) {
+  if (y <= POP_DATA[0].year) return POP_DATA[0].pop;
+  if (y >= POP_DATA[POP_DATA.length-1].year) return POP_DATA[POP_DATA.length-1].pop;
+  for (let i = 1; i < POP_DATA.length; i++) {
+    if (y <= POP_DATA[i].year) {
+      const p = POP_DATA[i-1], c = POP_DATA[i];
+      const t = (y - p.year) / (c.year - p.year);
+      return p.pop + t * (c.pop - p.pop);
+    }
+  }
+  return POP_DATA[POP_DATA.length-1].pop;
+}
 
 // Build lookup: year → dynasty name
 // Priority: non-overlap dynasties (main dynasties) take precedence over overlap ones
@@ -466,6 +507,12 @@ let touchState='idle', lastPinchTime=0, pinchCurrentDist=0, pinchConfirmed=false
 const PINCH_COOLDOWN=300, PINCH_DEADZONE=10;
 let velocity=0;
 let densityMultiplier=1.0;
+let showPopCurve=true;
+function togglePopCurve(){
+  showPopCurve=!showPopCurve;
+  document.getElementById('popToggle').style.opacity=showPopCurve?1:0.4;
+  requestRender();
+}
 
 // ============ rAF Batching ============
 let renderPending=false;
@@ -682,8 +729,58 @@ function render(){
     }
   });
 
+  // --- Population Curve (below timeline) ---
+  const yr=visE-visS; // also used by ticks below
+  if (showPopCurve) {
+  // Render as SVG path below the center line
+  const popBandH = bandH; // same height as dynasty bands
+  const popBaseY = centerY + 4; // start just below the line
+  const popMaxH = popBandH - 8; // max curve height
+
+  // Sample visible range at reasonable intervals
+  const popStep = yr > 2000 ? 50 : yr > 500 ? 20 : yr > 100 ? 10 : 5;
+  const popStart = Math.max(Math.floor(visS / popStep) * popStep, -2000);
+  const popEnd = Math.min(Math.ceil(visE / popStep) * popStep, 2025);
+  let popPath = '';
+  let popAreaPath = '';
+  let first = true;
+
+  for (let y = popStart; y <= popEnd; y += popStep) {
+    const x = yearToX(y);
+    const pop = getPopAtYear(y);
+    const h = (pop / POP_MAX) * popMaxH;
+    const py = popBaseY + popBandH - 4 - h;
+    if (first) { popPath += 'M' + x + ' ' + py; popAreaPath += 'M' + x + ' ' + (popBaseY + popBandH - 4) + 'L' + x + ' ' + py; first = false; }
+    else { popPath += 'L' + x + ' ' + py; popAreaPath += 'L' + x + ' ' + py; }
+  }
+  // Close area path
+  popAreaPath += 'L' + yearToX(popEnd) + ' ' + (popBaseY + popBandH - 4) + 'Z';
+
+  // Focus dynasty affects pop curve opacity
+  const popCurveOpacity = 0.3;
+  const popAreaOpacity = 0.04;
+
+  if (popPath) {
+    html += '<svg class="pop-curve-svg" viewBox="0 0 ' + vw + ' ' + vh + '">';
+    html += '<path class="pop-curve-area" d="' + popAreaPath + '" fill="rgba(201,169,110,' + popAreaOpacity + ')" style="opacity:' + popAreaOpacity * 8 + '"/>';
+    html += '<path class="pop-curve" d="' + popPath + '" style="opacity:' + popCurveOpacity + '"/>';
+
+    // Current year population dot
+    const centerPop = getPopAtYear(Math.round(centerYear));
+    const centerPopH = (centerPop / POP_MAX) * popMaxH;
+    const centerPopY = popBaseY + popBandH - 4 - centerPopH;
+    const centerPopX = yearToX(centerYear);
+    if (centerPopX > -20 && centerPopX < vw + 20) {
+      html += '<circle class="pop-dot-glow" cx="' + centerPopX + '" cy="' + centerPopY + '" r="8"/>';
+      html += '<circle class="pop-dot" cx="' + centerPopX + '" cy="' + centerPopY + '" r="3.5"/>';
+      html += '<text class="pop-label" x="' + (centerPopX + 8) + '" y="' + (centerPopY + 3) + '">' + (centerPop >= 10000 ? (centerPop / 10000).toFixed(1) + '亿' : centerPop >= 1000 ? (centerPop / 1000).toFixed(1) + '千万' : Math.round(centerPop) + '万') + '</text>';
+    }
+
+    html += '</svg>';
+  }
+  } // end showPopCurve
+
   // --- Background: ticks ---
-  const yr=visE-visS;
   let ti;
   if(yr>4000)ti=500;else if(yr>1500)ti=200;else if(yr>600)ti=100;else if(yr>200)ti=50;else if(yr>80)ti=20;else if(yr>30)ti=10;else if(yr>10)ti=5;else ti=1;
   const ft=Math.max(Math.floor(visS/ti)*ti,DATA_MIN), lt=Math.min(visE+ti,DATA_MAX);
