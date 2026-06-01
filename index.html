@@ -75,7 +75,7 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 .density-slider::-moz-range-thumb{width:12px;height:12px;background:var(--gold);border-radius:50%;cursor:pointer;border:none}
 
 /* ===== Focus Indicator ===== */
-.focus-indicator{position:fixed;top:78px;left:50%;transform:translateX(-50%);background:rgba(10,10,20,0.92);border:1px solid var(--border-gold);border-radius:12px;padding:2px 14px;font-size:11px;color:var(--gold);z-index:99;pointer-events:none;transition:opacity 0.3s;letter-spacing:2px;white-space:nowrap}
+.focus-indicator{position:fixed;top:78px;left:50%;transform:translateX(-50%);background:rgba(10,10,20,0.92);border:1px solid var(--border-gold);border-radius:12px;padding:2px 14px;font-size:11px;color:var(--gold);z-index:99;pointer-events:none;transition:opacity 0.3s;letter-spacing:2px;white-space:nowrap;display:flex;align-items:center}
 
 .filter-bar{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background:rgba(10,10,20,0.92);border:1px solid var(--border-gold);border-radius:16px;padding:3px 8px;z-index:100}
 .filter-chip{font-size:9px;padding:2px 7px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all 0.2s;white-space:nowrap}
@@ -331,7 +331,7 @@ const eventIndex=new Map();
 events.forEach((e,i)=>eventIndex.set(e,i));
 document.getElementById('loadingScreen').classList.add('hidden');
 
-// ============ 朝代数据 v1.1（含交错标记+色调） ============
+// ============ 朝代数据 v1.3（修正年份+交错标记+色调） ============
 const dynasties=[
   {name:"夏",start:-2070,end:-1600,color:"#8B7355",rgb:"139,115,85",overlap:false},
   {name:"商",start:-1600,end:-1046,color:"#A0522D",rgb:"160,82,45",overlap:false},
@@ -339,15 +339,15 @@ const dynasties=[
   {name:"东周",start:-770,end:-256,color:"#556B2F",rgb:"85,107,47",overlap:false},
   {name:"秦",start:-221,end:-207,color:"#2F4F4F",rgb:"47,79,79",overlap:false},
   {name:"西汉",start:-202,end:8,color:"#4682B4",rgb:"70,130,180",overlap:false},
-  {name:"新",start:8,end:25,color:"#5F9EA0",rgb:"95,158,160",overlap:true},
+  {name:"新",start:9,end:23,color:"#5F9EA0",rgb:"95,158,160",overlap:true},
   {name:"东汉",start:25,end:220,color:"#4682B4",rgb:"70,130,180",overlap:false},
   {name:"三国",start:220,end:280,color:"#8B4513",rgb:"139,69,19",overlap:true},
   {name:"西晋",start:265,end:316,color:"#DAA520",rgb:"218,165,32",overlap:true},
   {name:"东晋十六国",start:317,end:420,color:"#B8860B",rgb:"184,134,11",overlap:true},
   {name:"南北朝",start:420,end:589,color:"#696969",rgb:"105,105,105",overlap:true},
   {name:"隋",start:581,end:618,color:"#CD853F",rgb:"205,133,63",overlap:true},
-  {name:"唐",start:618,end:907,color:"#DC143C",rgb:"220,20,60",overlap:false},
-  {name:"五代十国",start:907,end:960,color:"#8B8682",rgb:"139,134,130",overlap:true},
+  {name:"唐",start:618,end:906,color:"#DC143C",rgb:"220,20,60",overlap:false},
+  {name:"五代十国",start:907,end:959,color:"#8B8682",rgb:"139,134,130",overlap:true},
   {name:"北宋",start:960,end:1127,color:"#9370DB",rgb:"147,112,219",overlap:false},
   {name:"南宋",start:1127,end:1279,color:"#7B68EE",rgb:"123,104,238",overlap:false},
   {name:"辽",start:907,end:1125,color:"#8B6914",rgb:"139,105,20",overlap:true},
@@ -357,7 +357,7 @@ const dynasties=[
   {name:"明",start:1368,end:1644,color:"#B22222",rgb:"178,34,34",overlap:false},
   {name:"清",start:1644,end:1912,color:"#DAA520",rgb:"218,165,32",overlap:false},
   {name:"民国",start:1912,end:1949,color:"#3CB371",rgb:"60,179,113",overlap:false},
-  {name:"新中国",start:1949,end:2025,color:"#FF4500",rgb:"255,69,0",overlap:false},
+  {name:"新中国",start:1949,end:2026,color:"#FF4500",rgb:"255,69,0",overlap:false},
 ];
 
 // ============ Historical Population Data (millions) ============
@@ -389,29 +389,29 @@ function getPopAtYear(y) {
   return POP_DATA[POP_DATA.length-1].pop;
 }
 
-// Build lookup: year → dynasty name
-// Priority: non-overlap dynasties (main dynasties) take precedence over overlap ones
-const dynastyByYear = [];
-// First pass: write overlap dynasties
-for (const d of dynasties) {
-  if (d.overlap) {
-    for (let y = d.start; y <= d.end; y++) {
-      dynastyByYear[y] = d.name;
-    }
-  }
-}
-// Second pass: write non-overlap dynasties (overwrite overlap where they coexist)
-for (const d of dynasties) {
-  if (!d.overlap) {
-    for (let y = d.start; y <= d.end; y++) {
-      dynastyByYear[y] = d.name;
-    }
-  }
-}
+// Find the most relevant dynasty for a given year
+// Non-overlap (main) dynasties take priority; among overlap dynasties, smallest span wins
+// For boundary years (a dynasty's end = next dynasty's start), prefer the one starting that year
 function getDynastyAtYear(y) {
-  if (y < -2070) return dynasties[0].name;
-  if (y > 2025) return dynasties[dynasties.length-1].name;
-  return dynastyByYear[y] || '';
+  const covering = dynasties.filter(d => y >= d.start && y <= d.end);
+  if (covering.length === 0) {
+    if (y < -2070) return '夏';
+    if (y > 2026) return '新中国';
+    return '';
+  }
+  // Prefer non-overlap (main) dynasties
+  const main = covering.filter(d => !d.overlap);
+  if (main.length > 0) {
+    // For boundary years, prefer the dynasty that starts at this year (not ends at this year)
+    const starting = main.filter(d => d.start === y);
+    if (starting.length > 0) return starting[0].name;
+    // Otherwise, pick the one with smallest span (most specific)
+    main.sort((a, b) => (a.end - a.start) - (b.end - b.start));
+    return main[0].name;
+  }
+  // Only overlap dynasties — pick the one with smallest span (most specific, e.g. 五代十国 over 辽)
+  covering.sort((a, b) => (a.end - a.start) - (b.end - b.start));
+  return covering[0].name;
 }
 function getDynastyObj(name) {
   return dynasties.find(d => d.name === name);
@@ -424,8 +424,8 @@ function formatDynastyYears(d) {
 }
 
 // Manual focus dynasty - set when user clicks a nav item to override year-based lookup
+// Cleared when user starts dragging/scrolling, not on timeout
 let manualFocusDynasty = null;
-let manualFocusTimeout = null;
 
 // ============ Dynasty Nav Bar ============
 (function(){
@@ -442,10 +442,8 @@ let manualFocusTimeout = null;
 
 function jumpToDynasty(name){
   const d=getDynastyObj(name);if(!d)return;
-  // Set manual focus so overlap dynasties (辽/金/西夏) don't get overridden
+  // Set manual focus so overlap dynasties (辽/金/西夏/五代十国) don't get overridden
   manualFocusDynasty = name;
-  if(manualFocusTimeout) clearTimeout(manualFocusTimeout);
-  manualFocusTimeout = setTimeout(() => { manualFocusDynasty = null; }, 4000);
   const centerYear=(d.start+d.end)/2;
   // Calculate appropriate pixelsPerYear: fit the dynasty in ~60% of viewport width
   const vw=viewport.clientWidth;
@@ -490,15 +488,10 @@ function getBandOpacity(dynastyName, centerYear) {
   return Math.max(0.15, 0.35 - dist * 0.04);
 }
 
-// ============ 数据范围自适应 ============
-let DATA_MIN, DATA_MAX;
-(function(){
-  if(events.length===0){DATA_MIN=-2070;DATA_MAX=2025;return}
-  DATA_MIN=events[0].year;DATA_MAX=events[0].year;
-  for(const e of events){if(e.year<DATA_MIN)DATA_MIN=e.year;if(e.year>DATA_MAX)DATA_MAX=e.year}
-  const range=DATA_MAX-DATA_MIN;const pad=Math.max(range*0.03,50);
-  DATA_MIN=Math.floor(DATA_MIN-pad);DATA_MAX=Math.ceil(DATA_MAX+pad);
-})();
+// ============ 数据范围 ============
+// 固定范围：从夏朝开始到当前年份，不展示之前/之后的无意义区域
+const DATA_MIN = -2070;
+const DATA_MAX = 2026;
 
 // ============ DOM ============
 const viewport=document.getElementById('viewport');
@@ -575,9 +568,9 @@ function selectVisibleEvents(visS, visE, vw, centerYear){
     return a.year - b.year;
   });
 
-  // Take events prioritizing focus dynasty
-  const focusEvents = candidates.filter(e => getDynastyAtYear(e.year) === focusDynasty);
-  const nearEvents = candidates.filter(e => getDynastyAtYear(e.year) !== focusDynasty);
+  // Take events prioritizing focus dynasty (use event's own dynasty field, not year-based lookup)
+  const focusEvents = candidates.filter(e => e.dynasty === focusDynasty);
+  const nearEvents = candidates.filter(e => e.dynasty !== focusDynasty);
 
   // All focus dynasty events (respecting level filter)
   const result = [...focusEvents];
@@ -671,22 +664,29 @@ function render(){
 
   // Update focus dynasty
   const yearBasedDynasty = getDynastyAtYear(Math.round(centerYear));
-  // Use manual focus if set (for overlap dynasties like 辽/金/西夏)
+  // Use manual focus if set (for overlap dynasties like 辽/金/西夏/五代十国)
+  // Manual focus is cleared when user starts dragging, so it persists while viewing
   if (manualFocusDynasty) {
     const md = getDynastyObj(manualFocusDynasty);
-    if (md && centerYear >= md.start - 20 && centerYear <= md.end + 20) {
+    if (md && centerYear >= md.start - 30 && centerYear <= md.end + 30) {
       currentFocusDynasty = manualFocusDynasty;
     } else {
-      manualFocusDynasty = null; // user has scrolled away
+      manualFocusDynasty = null; // user has scrolled far away
       currentFocusDynasty = yearBasedDynasty;
     }
   } else {
     currentFocusDynasty = yearBasedDynasty;
   }
 
-  // Update focus indicator
-  focusIndicator.textContent = currentFocusDynasty || '';
-  focusIndicator.style.opacity = currentFocusDynasty ? '1' : '0';
+  // Update focus indicator with dynasty name + year range
+  const focusDynastyObj = getDynastyObj(currentFocusDynasty);
+  if (focusDynastyObj) {
+    focusIndicator.innerHTML = '<span>' + currentFocusDynasty + '</span><span style="font-size:9px;opacity:0.6;margin-left:6px;letter-spacing:0">' + formatDynastyYears(focusDynastyObj) + '</span>';
+    focusIndicator.style.opacity = '1';
+  } else {
+    focusIndicator.textContent = '';
+    focusIndicator.style.opacity = '0';
+  }
 
   // Update dynasty nav highlight
   document.querySelectorAll('.dynasty-nav-item').forEach(el => {
@@ -962,6 +962,7 @@ viewport.addEventListener('touchstart',e=>{
     touchState='dragging';touchMoved=false;touchStartTime=now;
     dragStartX=e.touches[0].clientX;dragStartOffsetX=offsetX;
     velocity=0;lastPointerX=e.touches[0].clientX;lastTime=now;
+    manualFocusDynasty=null; // user started dragging, release manual focus
   }
   else if(e.touches.length===2){
     touchState='pinching';pinchConfirmed=false;
@@ -1042,6 +1043,7 @@ let mDown=false, mSX=0, mSO=0;
 viewport.addEventListener('mousedown',e=>{
   if(e.target.closest('.event-card,.btn,.filter-chip,.density-control,.dynasty-nav'))return;
   mDown=true;mSX=e.clientX;mSO=offsetX;velocity=0;lastPointerX=e.clientX;lastTime=Date.now();
+  manualFocusDynasty=null; // user started dragging, release manual focus
 });
 viewport.addEventListener('mousemove',e=>{
   if(!mDown)return;offsetX=mSO+(e.clientX-mSX);
@@ -1057,6 +1059,7 @@ viewport.addEventListener('wheel',e=>{
   e.preventDefault();const r=viewport.getBoundingClientRect(),mx=e.clientX-r.left,my=xToYear(mx);
   let np=pixelsPerYear*(e.deltaY>0?0.9:1.11);np=Math.max(0.01,Math.min(30,np));
   pixelsPerYear=np;offsetX=mx-my*pixelsPerYear;
+  manualFocusDynasty=null; // user is scrolling, release manual focus
   requestRender();showZI();
 },{passive:false});
 
