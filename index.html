@@ -110,6 +110,8 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 .dynasty-label{position:absolute;text-align:center;pointer-events:none;transition:opacity 0.3s}
 .dynasty-label span{font-size:10px;color:var(--gold);letter-spacing:3px;white-space:nowrap;font-weight:300;transition:all 0.3s}
 .dynasty-label.focus span{font-size:13px;font-weight:500;letter-spacing:4px}
+.dynasty-label .dynasty-years{display:block;font-size:8px;color:var(--text-muted);letter-spacing:1px;font-weight:300;margin-top:1px;opacity:0.7}
+.dynasty-label.focus .dynasty-years{font-size:9px;opacity:0.85}
 .dynasty-divider{position:absolute;top:50%;width:1px;transform:translateX(-50%);z-index:2;transition:opacity 0.3s}
 /* Population curve */
 .pop-curve-svg{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1}
@@ -415,6 +417,16 @@ function getDynastyObj(name) {
   return dynasties.find(d => d.name === name);
 }
 
+// Format dynasty year range for display (e.g., "前2070-前1600", "618-907")
+function formatDynastyYears(d) {
+  const fmtY = y => y < 0 ? '前' + Math.abs(y) : '' + y;
+  return fmtY(d.start) + '-' + fmtY(d.end);
+}
+
+// Manual focus dynasty - set when user clicks a nav item to override year-based lookup
+let manualFocusDynasty = null;
+let manualFocusTimeout = null;
+
 // ============ Dynasty Nav Bar ============
 (function(){
   const nav=document.getElementById('dynastyNav');
@@ -430,6 +442,10 @@ function getDynastyObj(name) {
 
 function jumpToDynasty(name){
   const d=getDynastyObj(name);if(!d)return;
+  // Set manual focus so overlap dynasties (辽/金/西夏) don't get overridden
+  manualFocusDynasty = name;
+  if(manualFocusTimeout) clearTimeout(manualFocusTimeout);
+  manualFocusTimeout = setTimeout(() => { manualFocusDynasty = null; }, 4000);
   const centerYear=(d.start+d.end)/2;
   // Calculate appropriate pixelsPerYear: fit the dynasty in ~60% of viewport width
   const vw=viewport.clientWidth;
@@ -443,7 +459,7 @@ function jumpToDynasty(name){
 let currentFocusDynasty = '';
 
 function calculateFocusWeight(eventYear, centerYear) {
-  const focusDynasty = getDynastyAtYear(Math.round(centerYear));
+  const focusDynasty = currentFocusDynasty || getDynastyAtYear(Math.round(centerYear));
   const eventDynasty = getDynastyAtYear(eventYear);
 
   if (focusDynasty === eventDynasty) return 1.0;
@@ -461,7 +477,7 @@ function calculateFocusWeight(eventYear, centerYear) {
 }
 
 function getBandOpacity(dynastyName, centerYear) {
-  const focusDynasty = getDynastyAtYear(Math.round(centerYear));
+  const focusDynasty = currentFocusDynasty || getDynastyAtYear(Math.round(centerYear));
   if (focusDynasty === dynastyName) return 1.0;
 
   const focusIdx = dynasties.findIndex(d => d.name === focusDynasty);
@@ -540,7 +556,7 @@ function getMaxVisibleEvents(vw, zl){
 function selectVisibleEvents(visS, visE, vw, centerYear){
   const zl = getZoomLevel();
   const maxEvents = getMaxVisibleEvents(vw, zl);
-  const focusDynasty = getDynastyAtYear(Math.round(centerYear));
+  const focusDynasty = currentFocusDynasty || getDynastyAtYear(Math.round(centerYear));
 
   let candidates = events.filter(e=>{
     if(!activeCategories.has(e.category)) return false;
@@ -612,7 +628,8 @@ function returnPoolNode(node){
 
 // ============ Card Layout ============
 // Category → side mapping: above or below the timeline
-const CAT_SIDE = {"政治":"above","科技":"above","文化":"above","军事":"below","人物":"below","社会":"below"};
+// 政治+社会+科技=350 (上) | 军事+人物+文化=376 (下) — 尽量均分
+const CAT_SIDE = {"政治":"above","社会":"above","科技":"above","军事":"below","人物":"below","文化":"below"};
 
 function layoutCards(vis,vh,vw){
   const centerY=vh/2, gap=6;
@@ -621,37 +638,26 @@ function layoutCards(vis,vh,vw){
   sorted.forEach(item=>{
     const x=item.x, estW=item.level===1?145:item.level===2?125:105, cardH=item.level===1?48:40;
     const cL=x-estW/2, cR=x+estW/2;
-    // Determine preferred side based on category
-    const prefSide = CAT_SIDE[item.event.category] || 'above';
+    // Determine side strictly by category — no fallback to opposite side
+    const side = CAT_SIDE[item.event.category] || 'above';
     let placed=false;
 
-    // Try preferred side first
-    if(prefSide==='above'){
-      for(let tier=0;tier<5;tier++){
+    // Place on assigned side only, with more tiers to avoid overflow
+    const maxTiers = 8;
+    if(side==='above'){
+      for(let tier=0;tier<maxTiers;tier++){
         const stem=16+tier*(cardH+8), cB=centerY-4-stem, cT=cB-cardH;let ov=false;
         for(const s of above){if(cL<s.r+gap&&cR>s.l-gap&&cT<s.b&&cB>s.b-s.h){ov=true;break}}
         if(!ov){results.push({...item,pos:'above',stem,tier});above.push({l:cL,r:cR,b:cB,h:cardH});placed=true;break}
       }
-      // Fallback to opposite side if no room
-      if(!placed){for(let tier=0;tier<5;tier++){
-        const stem=16+tier*(cardH+8), cT=centerY+4+stem;let ov=false;
-        for(const s of below){if(cL<s.r+gap&&cR>s.l-gap&&cT<s.t+s.h&&cT+cardH>s.t){ov=true;break}}
-        if(!ov){results.push({...item,pos:'below',stem,tier});below.push({l:cL,r:cR,t:cT,h:cardH});placed=true;break}
-      }}
     } else {
-      for(let tier=0;tier<5;tier++){
+      for(let tier=0;tier<maxTiers;tier++){
         const stem=16+tier*(cardH+8), cT=centerY+4+stem;let ov=false;
         for(const s of below){if(cL<s.r+gap&&cR>s.l-gap&&cT<s.t+s.h&&cT+cardH>s.t){ov=true;break}}
         if(!ov){results.push({...item,pos:'below',stem,tier});below.push({l:cL,r:cR,t:cT,h:cardH});placed=true;break}
       }
-      // Fallback to opposite side if no room
-      if(!placed){for(let tier=0;tier<5;tier++){
-        const stem=16+tier*(cardH+8), cB=centerY-4-stem, cT=cB-cardH;let ov=false;
-        for(const s of above){if(cL<s.r+gap&&cR>s.l-gap&&cT<s.b&&cB>s.b-s.h){ov=true;break}}
-        if(!ov){results.push({...item,pos:'above',stem,tier});above.push({l:cL,r:cR,b:cB,h:cardH});placed=true;break}
-      }}
     }
-    if(!placed) results.push({...item,pos:prefSide,stem:16,tier:0});
+    if(!placed) results.push({...item,pos:side,stem:16,tier:0});
   });
   return results;
 }
@@ -664,16 +670,27 @@ function render(){
   const centerYear=(visS+visE)/2;
 
   // Update focus dynasty
-  const focusDynasty = getDynastyAtYear(Math.round(centerYear));
-  currentFocusDynasty = focusDynasty;
+  const yearBasedDynasty = getDynastyAtYear(Math.round(centerYear));
+  // Use manual focus if set (for overlap dynasties like 辽/金/西夏)
+  if (manualFocusDynasty) {
+    const md = getDynastyObj(manualFocusDynasty);
+    if (md && centerYear >= md.start - 20 && centerYear <= md.end + 20) {
+      currentFocusDynasty = manualFocusDynasty;
+    } else {
+      manualFocusDynasty = null; // user has scrolled away
+      currentFocusDynasty = yearBasedDynasty;
+    }
+  } else {
+    currentFocusDynasty = yearBasedDynasty;
+  }
 
   // Update focus indicator
-  focusIndicator.textContent = focusDynasty || '';
-  focusIndicator.style.opacity = focusDynasty ? '1' : '0';
+  focusIndicator.textContent = currentFocusDynasty || '';
+  focusIndicator.style.opacity = currentFocusDynasty ? '1' : '0';
 
   // Update dynasty nav highlight
   document.querySelectorAll('.dynasty-nav-item').forEach(el => {
-    el.classList.toggle('focus', el.dataset.dynasty === focusDynasty);
+    el.classList.toggle('focus', el.dataset.dynasty === currentFocusDynasty);
   });
 
   // Auto-scroll dynasty nav to show focused dynasty
@@ -701,7 +718,7 @@ function render(){
 
     const w = Math.max(x2-x1, 2);
     const bandOpacity = getBandOpacity(d.name, centerYear);
-    const isFocus = d.name === focusDynasty;
+    const isFocus = d.name === currentFocusDynasty;
     const rgb = d.rgb;
 
     // Upper band (above center line)
@@ -723,8 +740,9 @@ function render(){
       if(cx>-80&&cx<vw+80){
         const labelOpacity = isFocus ? 1 : 0.2 + bandOpacity * 0.3;
         const labelClass = isFocus ? 'dynasty-label focus' : 'dynasty-label';
-        const labelTop = isFocus ? (centerY - bandH - 22) : (centerY - bandH + 6);
-        html+='<div class="'+labelClass+'" style="left:'+cx+'px;top:'+labelTop+'px;opacity:'+labelOpacity+'"><span>'+d.name+'</span></div>';
+        const labelTop = isFocus ? (centerY - bandH - 28) : (centerY - bandH + 6);
+        const yearRange = formatDynastyYears(d);
+        html+='<div class="'+labelClass+'" style="left:'+cx+'px;top:'+labelTop+'px;opacity:'+labelOpacity+'"><span>'+d.name+'</span><span class="dynasty-years">'+yearRange+'</span></div>';
       }
     }
   });
