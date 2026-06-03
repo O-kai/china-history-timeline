@@ -103,7 +103,7 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 
 .timeline-line{position:absolute;top:50%;height:2px;transform:translateY(-1px);pointer-events:none;background:linear-gradient(90deg,transparent 0%,var(--gold-dark) 3%,var(--gold) 20%,var(--gold-light) 50%,var(--gold) 80%,var(--gold-dark) 97%,transparent 100%);box-shadow:0 0 8px var(--glow-gold),0 0 20px rgba(201,169,110,0.05)}
 
-/* ===== Dynasty Bands (v1.1 enhanced) ===== */
+/* ===== Dynasty Bands (v1.4 staggered rows for overlap) ===== */
 .dynasty-band{position:absolute;pointer-events:none;transition:opacity 0.4s}
 .dynasty-band-upper{border-radius:3px 3px 0 0}
 .dynasty-band-lower{border-radius:0 0 3px 3px}
@@ -112,7 +112,11 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 .dynasty-label.focus span{font-size:13px;font-weight:500;letter-spacing:4px}
 .dynasty-label .dynasty-years{display:block;font-size:8px;color:var(--text-muted);letter-spacing:1px;font-weight:300;margin-top:1px;opacity:0.7}
 .dynasty-label.focus .dynasty-years{font-size:9px;opacity:0.85}
-.dynasty-divider{position:absolute;top:50%;width:1px;transform:translateX(-50%);z-index:2;transition:opacity 0.3s}
+.dynasty-divider{position:absolute;width:1px;transform:translateX(-50%);z-index:2;transition:opacity 0.3s}
+/* Overlap dynasty staggered rows */
+.dynasty-row{position:absolute;pointer-events:none;display:flex;align-items:center}
+.dynasty-row-label{position:absolute;white-space:nowrap;font-size:8px;color:var(--text-muted);letter-spacing:1px;pointer-events:none;opacity:0.5}
+.dynasty-row-label.focus{color:var(--gold);opacity:1;font-size:10px;letter-spacing:2px}
 /* Population curve */
 .pop-curve-svg{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1}
 .pop-curve{fill:none;stroke:var(--gold);stroke-width:1.5;opacity:0.35;transition:opacity 0.3s}
@@ -426,6 +430,7 @@ function formatDynastyYears(d) {
 // Manual focus dynasty - set when user clicks a nav item to override year-based lookup
 // Cleared when user starts dragging/scrolling, not on timeout
 let manualFocusDynasty = null;
+let isAnimating = false; // prevent clearing manualFocusDynasty during animation
 
 // ============ Dynasty Nav Bar ============
 (function(){
@@ -665,14 +670,19 @@ function render(){
   // Update focus dynasty
   const yearBasedDynasty = getDynastyAtYear(Math.round(centerYear));
   // Use manual focus if set (for overlap dynasties like 辽/金/西夏/五代十国)
-  // Manual focus is cleared when user starts dragging, so it persists while viewing
+  // During animation: always keep manualFocusDynasty (prevent race condition with old viewport position)
+  // After animation: clear when user scrolls far away from the focused dynasty
   if (manualFocusDynasty) {
-    const md = getDynastyObj(manualFocusDynasty);
-    if (md && centerYear >= md.start - 30 && centerYear <= md.end + 30) {
+    if (isAnimating) {
       currentFocusDynasty = manualFocusDynasty;
     } else {
-      manualFocusDynasty = null; // user has scrolled far away
-      currentFocusDynasty = yearBasedDynasty;
+      const md = getDynastyObj(manualFocusDynasty);
+      if (md && centerYear >= md.start - 30 && centerYear <= md.end + 30) {
+        currentFocusDynasty = manualFocusDynasty;
+      } else {
+        manualFocusDynasty = null; // user has scrolled far away
+        currentFocusDynasty = yearBasedDynasty;
+      }
     }
   } else {
     currentFocusDynasty = yearBasedDynasty;
@@ -709,40 +719,93 @@ function render(){
   const lL=yearToX(Math.max(visS-100,DATA_MIN)), lR=yearToX(Math.min(visE+100,DATA_MAX));
   if(lR>0&&lL<vw) html+='<div class="timeline-line" style="left:'+Math.max(0,lL)+'px;width:'+(Math.min(vw,lR)-Math.max(0,lL))+'px;top:'+centerY+'px"></div>';
 
-  // --- Background: Dynasty bands (v1.1 enhanced with focus weight) ---
+  // --- Background: Dynasty bands (v1.4 staggered rows for overlap dynasties) ---
   const bandH = Math.min(vh * 0.18, 120);
+  const rowH = Math.min(bandH * 0.28, 28);
+  // Calculate staggered rows: dynasties with overlapping years get different rows
+  // Row 0 = center band (main line), Row 1,2,3... = staggered above/below
+  // Non-overlap (main) dynasties always get row 0; overlap dynasties get higher rows
+  const dynRows = []; // parallel array to dynasties, each item = {row}
+  const row0End = []; // tracks occupied ranges on row 0
+  const otherRowEnds = {}; // otherRowEnds[row] = end year of last dynasty on that row
+  dynasties.forEach((d, i) => {
+    if (!d.overlap) {
+      // Main dynasty: always row 0
+      dynRows[i] = { row: 0 };
+      row0End.push(d.end);
+    } else {
+      // Overlap dynasty: find the lowest row > 0 that doesn't conflict with same-row dynasties
+      let row = 1;
+      while (otherRowEnds[row] !== undefined && otherRowEnds[row] > d.start) {
+        row++;
+      }
+      dynRows[i] = { row };
+      otherRowEnds[row] = d.end;
+    }
+  });
 
-  dynasties.forEach(d=>{
+  // Render all dynasty bands
+  dynasties.forEach((d, i) => {
     const x1=yearToX(d.start), x2=yearToX(d.end);
     if(x2<0||x1>vw) return;
-
     const w = Math.max(x2-x1, 2);
     const bandOpacity = getBandOpacity(d.name, centerYear);
     const isFocus = d.name === currentFocusDynasty;
     const rgb = d.rgb;
+    const row = dynRows[i].row;
 
-    // Upper band (above center line)
-    const upperAlpha = isFocus ? 0.18 : 0.05 * bandOpacity;
-    const lowerAlpha = isFocus ? 0.14 : 0.04 * bandOpacity;
-
-    html+='<div class="dynasty-band dynasty-band-upper" style="left:'+x1+'px;width:'+w+'px;top:'+(centerY-bandH)+'px;height:'+bandH+'px;background:rgba('+rgb+','+upperAlpha+')"></div>';
-
-    // Lower band (below center line)
-    html+='<div class="dynasty-band dynasty-band-lower" style="left:'+x1+'px;width:'+w+'px;top:'+centerY+'px;height:'+bandH+'px;background:rgba('+rgb+','+lowerAlpha+')"></div>';
-
-    // Divider line at dynasty start
-    const divOpacity = isFocus ? 0.6 : 0.15 * bandOpacity;
-    html+='<div class="dynasty-divider" style="left:'+x1+'px;top:'+(centerY-bandH)+'px;height:'+(bandH*2)+'px;background:rgba('+rgb+','+divOpacity+')"></div>';
-
-    // Dynasty label
-    if(zl<=2 || isFocus){
+    if (row === 0) {
+      // Main row: draw full upper+lower bands centered on timeline
+      const upperAlpha = isFocus ? 0.18 : 0.05 * bandOpacity;
+      const lowerAlpha = isFocus ? 0.14 : 0.04 * bandOpacity;
+      html+='<div class="dynasty-band dynasty-band-upper" style="left:'+x1+'px;width:'+w+'px;top:'+(centerY-bandH)+'px;height:'+bandH+'px;background:rgba('+rgb+','+upperAlpha+')"></div>';
+      html+='<div class="dynasty-band dynasty-band-lower" style="left:'+x1+'px;width:'+w+'px;top:'+centerY+'px;height:'+bandH+'px;background:rgba('+rgb+','+lowerAlpha+')"></div>';
+      const divOpacity = isFocus ? 0.6 : 0.15 * bandOpacity;
+      html+='<div class="dynasty-divider" style="left:'+x1+'px;top:'+(centerY-bandH)+'px;height:'+(bandH*2)+'px;background:rgba('+rgb+','+divOpacity+')"></div>';
+      // Label above main band
+      if(zl<=2 || isFocus){
+        const cx=(x1+x2)/2;
+        if(cx>-80&&cx<vw+80){
+          const labelOpacity = isFocus ? 1 : 0.2 + bandOpacity * 0.3;
+          const labelClass = isFocus ? 'dynasty-label focus' : 'dynasty-label';
+          const labelTop = isFocus ? (centerY - bandH - 28) : (centerY - bandH + 6);
+          const yearRange = formatDynastyYears(d);
+          html+='<div class="'+labelClass+'" style="left:'+cx+'px;top:'+labelTop+'px;opacity:'+labelOpacity+'"><span>'+d.name+'</span><span class="dynasty-years">'+yearRange+'</span></div>';
+        }
+      }
+    } else {
+      // Staggered row (overlapping dynasty): draw as narrow strip with slanted edges
+      const isAbove = (row % 2 === 1);
+      const rowOffset = Math.ceil(row / 2);
+      let rowY;
+      if (isAbove) {
+        rowY = centerY - bandH - rowOffset * (rowH + 3);
+      } else {
+        rowY = centerY + bandH + (rowOffset - 1) * (rowH + 3);
+      }
+      const rowAlpha = isFocus ? 0.4 : 0.1 * bandOpacity;
+      // Center rectangle
+      const slantPx = Math.min(w * 0.06, 10);
+      html+='<div style="position:absolute;left:'+(x1+slantPx)+'px;width:'+Math.max(w-slantPx*2, 1)+'px;top:'+rowY+'px;height:'+rowH+'px;background:rgba('+rgb+','+rowAlpha+');border-radius:1px;pointer-events:none"></div>';
+      // Left slant triangle
+      if(x1 > -50) {
+        html+='<div style="position:absolute;left:'+x1+'px;top:'+rowY+'px;width:0;height:0;border-top:'+(rowH/2)+'px solid transparent;border-bottom:'+(rowH/2)+'px solid transparent;border-right:'+slantPx+'px solid rgba('+rgb+','+rowAlpha+');pointer-events:none"></div>';
+      }
+      // Right slant triangle
+      if(x2 < vw+50) {
+        html+='<div style="position:absolute;left:'+(x2-slantPx)+'px;top:'+rowY+'px;width:0;height:0;border-top:'+(rowH/2)+'px solid transparent;border-bottom:'+(rowH/2)+'px solid transparent;border-left:'+slantPx+'px solid rgba('+rgb+','+rowAlpha+');pointer-events:none"></div>';
+      }
+      // Divider at start
+      const divOpacity2 = isFocus ? 0.5 : 0.1 * bandOpacity;
+      html+='<div class="dynasty-divider" style="left:'+x1+'px;top:'+rowY+'px;height:'+rowH+'px;background:rgba('+rgb+','+divOpacity2+')"></div>';
+      // Label below/above the row strip
       const cx=(x1+x2)/2;
-      if(cx>-80&&cx<vw+80){
-        const labelOpacity = isFocus ? 1 : 0.2 + bandOpacity * 0.3;
-        const labelClass = isFocus ? 'dynasty-label focus' : 'dynasty-label';
-        const labelTop = isFocus ? (centerY - bandH - 28) : (centerY - bandH + 6);
+      if(cx>-80&&cx<vw+80) {
+        const labelOpacity = isFocus ? 1 : 0.3 + bandOpacity * 0.3;
+        const labelClass = isFocus ? 'dynasty-row-label focus' : 'dynasty-row-label';
         const yearRange = formatDynastyYears(d);
-        html+='<div class="'+labelClass+'" style="left:'+cx+'px;top:'+labelTop+'px;opacity:'+labelOpacity+'"><span>'+d.name+'</span><span class="dynasty-years">'+yearRange+'</span></div>';
+        const labelY = isAbove ? (rowY + rowH + 1) : (rowY - 12);
+        html+='<div class="'+labelClass+'" style="left:'+cx+'px;top:'+labelY+'px;opacity:'+labelOpacity+';transform:translateX(-50%);text-align:center"><span style="display:block">'+d.name+'</span><span style="display:block;font-size:7px;opacity:0.6;letter-spacing:0">'+yearRange+'</span></div>';
       }
     }
   });
@@ -942,10 +1005,11 @@ function goHome(){
 }
 function animateTo(ty,tppy){
   const vw=viewport.clientWidth,so=offsetX,sp=pixelsPerYear,eo=vw/2-ty*tppy,ep=tppy,dur=400,st=performance.now();
+  isAnimating=true;
   function step(now){
     const t=Math.min((now-st)/dur,1),ease=1-Math.pow(1-t,3);
     pixelsPerYear=sp+(ep-sp)*ease;offsetX=so+(eo-so)*ease;
-    requestRender();if(t<1)requestAnimationFrame(step);
+    requestRender();if(t<1)requestAnimationFrame(step);else isAnimating=false;
   }
   requestAnimationFrame(step);
 }
