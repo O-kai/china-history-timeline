@@ -298,6 +298,7 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 </div>
 
 <button class="feedback-btn" id="feedbackBtn" title="反馈建议">💬</button>
+<button class="feedback-btn" id="shareBtn" title="分享" style="bottom:132px">🔗</button>
 <div class="feedback-overlay" id="feedbackOverlay">
   <div class="feedback-panel">
     <div class="feedback-title"><span>📝 反馈与建议</span><button class="feedback-close" id="feedbackClose">✕</button></div>
@@ -1213,6 +1214,36 @@ feedbackSubmit.addEventListener('click',()=>{
 </script>
 <script>
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').then(r=>console.log('SW registered:',r.scope)).catch(e=>console.warn('SW failed:',e))}
+
+// Share button
+const shareBtn=document.getElementById('shareBtn');
+shareBtn.addEventListener('click',async()=>{
+  const shareData={title:'中华历史时间轴',text:'纵览五千年文明脉络——可交互中华历史时间轴',url:location.href};
+  if(navigator.share){try{await navigator.share(shareData)}catch(e){if(e.name!=='AbortError')copyUrl()}}else{copyUrl()}
+});
+function copyUrl(){
+  navigator.clipboard.writeText(location.href).then(()=>showToast('链接已复制，可分享给朋友')).catch(()=>showToast('请手动复制地址栏链接'));
+}
+function showToast(msg){
+  const t=document.createElement('div');t.textContent=msg;
+  Object.assign(t.style,{position:'fixed',bottom:'50%',left:'50%',transform:'translate(-50%,-50%)',background:'rgba(10,10,20,0.95)',border:'1px solid var(--border-gold)',borderRadius:'10px',padding:'12px 24px',color:'var(--gold)',fontSize:'14px',zIndex:'999',pointerEvents:'none',animation:'fadeOut 2s forwards'});
+  document.body.appendChild(t);setTimeout(()=>t.remove(),2200);
+}
+// Add fadeOut animation
+if(!document.getElementById('toast-style')){const s=document.createElement('style');s.id='toast-style';s.textContent='@keyframes fadeOut{0%{opacity:1}70%{opacity:1}100%{opacity:0}}';document.head.appendChild(s)}
+
+// PWA install prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e});
+// Show install tip after 3s on mobile
+setTimeout(()=>{
+  if(!window.matchMedia('(display-mode:standalone)').matches&&/Mobi|Android|iPhone/i.test(navigator.userAgent)){
+    const tip=document.createElement('div');
+    tip.innerHTML='<div style="font-size:13px;color:var(--gold);margin-bottom:6px">📲 添加到主屏幕，像App一样使用</div><div style="font-size:11px;color:var(--text-secondary);line-height:1.5">'+(/iPhone|iPad/i.test(navigator.userAgent)?'点击底部 <b style="color:var(--gold)">分享按钮</b> → 选择「添加到主屏幕」':'点击右上角 <b style="color:var(--gold)">⋮</b> → 选择「添加到主屏幕」')+'</div>';
+    Object.assign(tip.style,{position:'fixed',bottom:'20px',left:'50%',transform:'translateX(-50%)',background:'rgba(10,10,20,0.96)',border:'1px solid var(--border-gold)',borderRadius:'12px',padding:'14px 20px',zIndex:'200',maxWidth:'320px',width:'85%',boxShadow:'0 4px 20px rgba(201,169,110,0.12)',animation:'fadeOut 8s forwards'});
+    document.body.appendChild(tip);setTimeout(()=>tip.remove(),8500);
+  }
+},3000);
 </script>
 </body>
 </html>
