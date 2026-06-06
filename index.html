@@ -189,8 +189,8 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 .detail-context h4{color:var(--gold);font-size:11px;margin-bottom:3px;font-weight:500}
 
 /* Feedback Button & Modal */
-.feedback-btn{position:fixed;right:10px;bottom:90px;width:36px;height:36px;background:rgba(10,10,20,0.92);border:1px solid var(--border-gold);border-radius:50%;color:var(--gold);font-size:16px;cursor:pointer;z-index:100;display:flex;align-items:center;justify-content:center;transition:all 0.2s;opacity:0.7;line-height:1}
-.feedback-btn:hover{background:rgba(201,169,110,0.15);opacity:1;transform:scale(1.1)}
+.side-btn{position:fixed;right:10px;width:34px;height:34px;background:rgba(10,10,20,0.92);border:1px solid var(--border-gold);border-radius:50%;color:var(--gold);font-size:14px;cursor:pointer;z-index:100;display:flex;align-items:center;justify-content:center;transition:all 0.2s;opacity:0.7;line-height:1}
+.side-btn:hover{background:rgba(201,169,110,0.15);opacity:1;transform:scale(1.1)}
 .feedback-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:300;display:none;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(2px)}
 .feedback-overlay.active{display:flex}
 .feedback-panel{background:var(--bg-secondary);border:1px solid var(--border-gold);border-radius:12px;max-width:420px;width:100%;padding:20px;box-shadow:0 0 30px rgba(201,169,110,0.08)}
@@ -222,7 +222,11 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
   .filter-bar{bottom:6px;padding:2px 5px}
   .filter-chip{font-size:8px;padding:1px 5px}
   .scale-bar{bottom:28px}
-  .density-control{bottom:38px;right:8px}
+  .density-control{bottom:6px;right:8px}
+  .side-btn{width:30px;height:30px;font-size:12px;right:8px}
+  .side-btn[style*="bottom:60px"]{bottom:48px}
+  .side-btn[style*="bottom:100px"]{bottom:84px}
+  .side-btn[style*="bottom:140px"]{bottom:120px}
   .event-card{max-width:200px}
   .event-card.expanded{max-width:300px}
   .dynasty-label span{font-size:9px}
@@ -261,16 +265,13 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 
 <button class="btn-home" id="btnHome" onclick="goHome()" title="回到当前位置">⌂</button>
 
-<div class="density-control">
+<div class="density-control" style="bottom:12px">
   <span class="density-label">密度</span>
   <input type="range" class="density-slider" id="densitySlider" min="0.3" max="3" step="0.1" value="1">
   <span class="density-value" id="densityValue">1.0x</span>
 </div>
 
-<div class="density-control" style="bottom:100px;gap:4px">
-  <span class="density-label" style="font-size:7px">人口</span>
-  <button class="btn" id="popToggle" style="font-size:9px;padding:2px 6px;border-radius:4px" onclick="togglePopCurve()">📈</button>
-</div>
+<button class="side-btn" id="popToggle" title="人口曲线" style="bottom:60px">📈</button>
 
 <div class="timeline-viewport" id="viewport">
   <div class="timeline-canvas" id="canvas"></div>
@@ -297,8 +298,8 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
   <div class="detail-panel" id="detailPanel"></div>
 </div>
 
-<button class="feedback-btn" id="feedbackBtn" title="反馈建议">💬</button>
-<button class="feedback-btn" id="shareBtn" title="分享" style="bottom:132px">🔗</button>
+<button class="side-btn" id="feedbackBtn" title="反馈建议" style="bottom:100px">💬</button>
+<button class="side-btn" id="shareBtn" title="分享" style="bottom:140px">🔗</button>
 <div class="feedback-overlay" id="feedbackOverlay">
   <div class="feedback-panel">
     <div class="feedback-title"><span>📝 反馈与建议</span><button class="feedback-close" id="feedbackClose">✕</button></div>
@@ -371,20 +372,22 @@ const dynasties=[
   {name:"新中国",start:1949,end:2026,color:"#FF4500",rgb:"255,69,0",overlap:false},
 ];
 
-// ============ Historical Population Data (millions) ============
-// Based on scholarly estimates of China's population at key historical points
+// ============ Historical Population Data (万人) ============
+// Based on scholarly estimates: 葛剑雄《中国人口史》、官方人口普查数据
+// unit: 万
 const POP_DATA = [
-  {year:-2000,pop:13},{year:-1500,pop:15},{year:-1000,pop:20},{year:-700,pop:20},
-  {year:-400,pop:25},{year:-221,pop:20},{year:-1,pop:59},{year:57,pop:21},
-  {year:157,pop:56},{year:220,pop:16},{year:280,pop:24},{year:520,pop:50},
-  {year:609,pop:46},{year:755,pop:80},{year:960,pop:32},{year:1120,pop:120},
-  {year:1200,pop:115},{year:1290,pop:75},{year:1400,pop:65},{year:1500,pop:110},
-  {year:1600,pop:150},{year:1680,pop:120},{year:1740,pop:180},{year:1790,pop:300},
-  {year:1840,pop:410},{year:1870,pop:350},{year:1910,pop:430},{year:1930,pop:480},
-  {year:1950,pop:550},{year:1960,pop:660},{year:1970,pop:800},{year:1980,pop:980},
-  {year:1990,pop:1130},{year:2000,pop:1260},{year:2010,pop:1340},{year:2020,pop:1400}
+  {year:-2070,pop:1300},{year:-1600,pop:1500},{year:-1046,pop:2000},{year:-770,pop:2000},
+  {year:-684,pop:1185},{year:-400,pop:2800},{year:-221,pop:2000},{year:-202,pop:1500},
+  {year:2,pop:5767},{year:57,pop:2100},{year:157,pop:5648},{year:220,pop:2500},
+  {year:280,pop:2400},{year:520,pop:5000},{year:609,pop:4600},{year:755,pop:8500},
+  {year:960,pop:5000},{year:1120,pop:12000},{year:1200,pop:11500},{year:1290,pop:6000},
+  {year:1393,pop:6200},{year:1600,pop:18000},{year:1644,pop:15000},{year:1680,pop:10000},
+  {year:1741,pop:14300},{year:1790,pop:30100},{year:1834,pop:40100},{year:1851,pop:43000},
+  {year:1870,pop:35000},{year:1910,pop:43000},{year:1930,pop:48000},{year:1949,pop:54000},
+  {year:1953,pop:60200},{year:1964,pop:72300},{year:1982,pop:103200},{year:1990,pop:114000},
+  {year:2000,pop:126700},{year:2010,pop:134100},{year:2020,pop:141200},{year:2025,pop:140500}
 ];
-const POP_MAX = 1400;
+const POP_MAX = 150000;
 
 // Interpolate population at any year
 function getPopAtYear(y) {
@@ -547,6 +550,12 @@ function getZoomLevel(){if(pixelsPerYear<0.25)return 1;if(pixelsPerYear<1.2)retu
 function getZoomLabel(){const l=getZoomLevel();return l===1?'宏观 · 朝代':l===2?'中观 · 年代':'微观 · 日期'}
 function yearToX(y){return y*pixelsPerYear+offsetX}
 function xToYear(x){return(x-offsetX)/pixelsPerYear}
+function clampOffsetX(){
+  const vw=viewport.clientWidth,buf=vw*0.15;
+  const minOX=buf-DATA_MAX*pixelsPerYear;
+  const maxOX=vw-buf-DATA_MIN*pixelsPerYear;
+  offsetX=Math.max(minOX,Math.min(maxOX,offsetX));
+}
 function formatYear(y){return y<0?'前'+Math.abs(y)+'年':y+'年'}
 function formatYearFull(e){let s=formatYear(e.year);if(e.month)s+=e.month+'月';if(e.day)s+=e.day+'日';return s}
 function getCatColor(c){return CATS[c]?CATS[c].c:'#c9a96e'}
@@ -861,7 +870,7 @@ function render(){
     if (centerPopX > -20 && centerPopX < vw + 20) {
       html += '<circle class="pop-dot-glow" cx="' + centerPopX + '" cy="' + centerPopY + '" r="8"/>';
       html += '<circle class="pop-dot" cx="' + centerPopX + '" cy="' + centerPopY + '" r="3.5"/>';
-      html += '<text class="pop-label" x="' + (centerPopX + 8) + '" y="' + (centerPopY + 3) + '">' + (centerPop >= 10000 ? (centerPop / 10000).toFixed(1) + '亿' : centerPop >= 1000 ? (centerPop / 1000).toFixed(1) + '千万' : Math.round(centerPop) + '万') + '</text>';
+      html += '<text class="pop-label" x="' + (centerPopX + 8) + '" y="' + (centerPopY + 3) + '">' + (centerPop >= 10000 ? (centerPop / 10000).toFixed(1) + '亿' : centerPop >= 1000 ? Math.round(centerPop / 1000) + '千万' : Math.round(centerPop) + '万') + '</text>';
     }
 
     html += '</svg>';
@@ -1001,13 +1010,13 @@ function doSearch(){
   else{searchResults.innerHTML=m.map(e=>{const i=eventIndex.get(e),cc=getCatColor(e.category);return'<div class="search-item" onclick="jumpToEvent('+i+')"><span class="si-year">'+formatYearFull(e)+'</span><span class="si-title">'+e.title+'</span><span class="si-cat" style="color:'+cc+';background:'+cc+'15">'+e.category+'</span></div>'}).join('')}
   searchResults.classList.add('active');
 }
-function jumpToEvent(idx){const e=events[idx],vw=viewport.clientWidth;offsetX=vw/2-e.year*pixelsPerYear;expandedCard=idx;searchResults.classList.remove('active');searchInput.value='';searchInput.blur();requestRender()}
+function jumpToEvent(idx){const e=events[idx],vw=viewport.clientWidth;offsetX=vw/2-e.year*pixelsPerYear;clampOffsetX();expandedCard=idx;searchResults.classList.remove('active');searchInput.value='';searchInput.blur();requestRender()}
 document.addEventListener('click',e=>{if(!e.target.closest('.search-box'))searchResults.classList.remove('active')});
 
 // ============ Navigation ============
 function goHome(){
   const centerYear=(DATA_MIN+DATA_MAX)/2;
-  offsetX=viewport.clientWidth/2-centerYear*pixelsPerYear;
+  offsetX=viewport.clientWidth/2-centerYear*pixelsPerYear;clampOffsetX();
   expandedCard=null;requestRender();
 }
 function animateTo(ty,tppy){
@@ -1050,7 +1059,7 @@ viewport.addEventListener('touchmove',e=>{
   if(touchState==='dragging'&&e.touches.length===1){
     const dx=e.touches[0].clientX-dragStartX;
     if(Math.abs(dx)>5)touchMoved=true;
-    offsetX=dragStartOffsetX+dx;
+    offsetX=dragStartOffsetX+dx;clampOffsetX();
     const now=Date.now(),dt=now-lastTime;
     if(dt>0)velocity=(e.touches[0].clientX-lastPointerX)/dt*16;
     lastPointerX=e.touches[0].clientX;lastTime=now;
@@ -1064,7 +1073,7 @@ viewport.addEventListener('touchmove',e=>{
     if(pinchStartDist>0){
       let np=pinchStartPPY*(pinchCurrentDist/pinchStartDist);
       np=Math.max(0.01,Math.min(30,np));pixelsPerYear=np;
-      offsetX=pinchCenterX-pinchCenterYear*pixelsPerYear;
+      offsetX=pinchCenterX-pinchCenterYear*pixelsPerYear;clampOffsetX();
     }
     requestRender();showZI();
   }
@@ -1106,18 +1115,18 @@ viewport.addEventListener('touchend',e=>{
 });
 
 function inertia(){
-  if(Math.abs(velocity)>0.3){offsetX+=velocity;velocity*=0.93;requestRender();requestAnimationFrame(inertia)}
+  if(Math.abs(velocity)>0.3){offsetX+=velocity;velocity*=0.93;const prev=offsetX;clampOffsetX();if(offsetX!==prev)velocity=0;requestRender();requestAnimationFrame(inertia)}
 }
 
 // ============ Mouse ============
 let mDown=false, mSX=0, mSO=0;
 viewport.addEventListener('mousedown',e=>{
-  if(e.target.closest('.event-card,.btn,.filter-chip,.density-control,.dynasty-nav'))return;
+  if(e.target.closest('.event-card,.btn,.filter-chip,.density-control,.dynasty-nav,.side-btn'))return;
   mDown=true;mSX=e.clientX;mSO=offsetX;velocity=0;lastPointerX=e.clientX;lastTime=Date.now();
   manualFocusDynasty=null; // user started dragging, release manual focus
 });
 viewport.addEventListener('mousemove',e=>{
-  if(!mDown)return;offsetX=mSO+(e.clientX-mSX);
+  if(!mDown)return;offsetX=mSO+(e.clientX-mSX);clampOffsetX();
   const now=Date.now(),dt=now-lastTime;
   if(dt>0)velocity=(e.clientX-lastPointerX)/dt*16;
   lastPointerX=e.clientX;lastTime=now;requestRender();
@@ -1129,7 +1138,7 @@ viewport.addEventListener('mouseleave',()=>{mDown=false});
 viewport.addEventListener('wheel',e=>{
   e.preventDefault();const r=viewport.getBoundingClientRect(),mx=e.clientX-r.left,my=xToYear(mx);
   let np=pixelsPerYear*(e.deltaY>0?0.9:1.11);np=Math.max(0.01,Math.min(30,np));
-  pixelsPerYear=np;offsetX=mx-my*pixelsPerYear;
+  pixelsPerYear=np;offsetX=mx-my*pixelsPerYear;clampOffsetX();
   manualFocusDynasty=null; // user is scrolling, release manual focus
   requestRender();showZI();
 },{passive:false});
@@ -1144,6 +1153,7 @@ function toggleFullscreen(){if(!document.fullscreenElement)document.documentElem
 densitySlider.addEventListener('input',function(){
   densityMultiplier=parseFloat(this.value);densityValueEl.textContent=densityMultiplier.toFixed(1)+'x';requestRender();
 });
+document.getElementById('popToggle').addEventListener('click',togglePopCurve);
 
 // ============ Filters ============
 document.querySelectorAll('.filter-chip').forEach(chip=>{
@@ -1165,7 +1175,7 @@ document.querySelectorAll('.filter-chip').forEach(chip=>{
 // ============ Init ============
 (function(){
   const centerYear=(DATA_MIN+DATA_MAX)/2;
-  offsetX=viewport.clientWidth/2-centerYear*pixelsPerYear;
+  offsetX=viewport.clientWidth/2-centerYear*pixelsPerYear;clampOffsetX();
 })();
 requestRender();
 window.addEventListener('resize',()=>requestRender());
