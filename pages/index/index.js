@@ -1,6 +1,8 @@
 Page({
   data: {
-    url: 'https://china-history-timeline.vercel.app/'
+    // 优先使用 Cloudflare Pages（国内访问最稳定）
+    // 备用：https://china-history-timeline.jsk-developer.workers.dev/
+    url: 'https://china-history-timeline-c4m.pages.dev/'
   },
   onLoad: function () {
     console.log('WebView loading:', this.data.url)
