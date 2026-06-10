@@ -1,4 +1,4 @@
-const CACHE_NAME = 'timeline-v3';
+const CACHE_NAME = 'timeline-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

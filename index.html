@@ -66,11 +66,16 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 .btn-home{position:fixed;right:10px;top:54px;background:rgba(10,10,20,0.88);border:1px solid var(--border-gold);color:var(--gold);width:34px;height:34px;border-radius:50%;font-size:15px;cursor:pointer;z-index:100;display:flex;align-items:center;justify-content:center;transition:all 0.2s;opacity:0.6}
 .btn-home:hover{background:rgba(201,169,110,0.15);opacity:1;transform:scale(1.1)}
 
-/* 密度控制 */
-.density-control{position:fixed;right:10px;bottom:50px;background:rgba(10,10,20,0.92);border:1px solid var(--border-gold);border-radius:8px;padding:6px 10px;z-index:100;display:flex;flex-direction:column;align-items:center;gap:2px}
-.density-label{font-size:8px;color:var(--text-muted);white-space:nowrap}
-.density-value{font-size:9px;color:var(--gold)}
-.density-slider{width:60px;-webkit-appearance:none;appearance:none;height:3px;background:var(--border-gold);border-radius:2px;outline:none}
+/* Right Toolbar */
+.right-toolbar{position:fixed;right:10px;bottom:50px;background:rgba(10,10,20,0.92);border:1px solid var(--border-gold);border-radius:10px;padding:8px 6px;z-index:100;display:flex;flex-direction:column;align-items:center;gap:6px}
+.toolbar-btn{width:32px;height:32px;background:rgba(201,169,110,0.08);border:1px solid var(--border-gold);color:var(--gold);border-radius:6px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;opacity:0.65;line-height:1}
+.toolbar-btn:hover{background:rgba(201,169,110,0.2);opacity:1}
+.toolbar-btn.active{opacity:1;border-color:var(--gold)}
+.toolbar-divider{width:22px;height:1px;background:var(--border-gold);opacity:0.4}
+.density-section{display:flex;flex-direction:column;align-items:center;gap:2px}
+.density-label{font-size:7px;color:var(--text-muted);white-space:nowrap;letter-spacing:1px}
+.density-value{font-size:8px;color:var(--gold)}
+.density-slider{width:48px;-webkit-appearance:none;appearance:none;height:3px;background:var(--border-gold);border-radius:2px;outline:none}
 .density-slider::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--gold);border-radius:50%;cursor:pointer}
 .density-slider::-moz-range-thumb{width:12px;height:12px;background:var(--gold);border-radius:50%;cursor:pointer;border:none}
 
@@ -121,9 +126,14 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 .pop-curve-svg{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1}
 .pop-curve{fill:none;stroke:var(--gold);stroke-width:1.5;opacity:0.35;transition:opacity 0.3s}
 .pop-curve-area{opacity:0.06;transition:opacity 0.3s}
-.pop-dot{fill:var(--gold);stroke:var(--gold);stroke-width:1;opacity:0.6;transition:opacity 0.3s,r 0.2s}
-.pop-dot-glow{fill:none;stroke:var(--gold);stroke-width:0.5;opacity:0.2}
-.pop-label{font-size:9px;fill:var(--gold);opacity:0.5;pointer-events:none;font-family:inherit}
+.pop-dot{fill:var(--gold);stroke:var(--gold);stroke-width:1;opacity:0.7;transition:opacity 0.3s,r 0.2s}
+.pop-dot-glow{fill:rgba(201,169,110,0.12);stroke:none;opacity:1}
+.pop-label{font-size:10px;fill:var(--gold);opacity:0.85;pointer-events:none;font-family:inherit;font-weight:500}
+.pop-label-bg{fill:rgba(10,10,20,0.85);rx:3;ry:3}
+.pop-milestone{font-size:8px;fill:var(--gold);opacity:0;pointer-events:none;font-family:inherit;transition:opacity 0.3s}
+.pop-milestone.visible{opacity:0.55}
+.pop-milestone-line{stroke:var(--gold);stroke-width:0.5;stroke-dasharray:2,2;opacity:0;transition:opacity 0.3s}
+.pop-milestone-line.visible{opacity:0.2}
 
 .tick{position:absolute;pointer-events:none}
 .tick-line{width:1px;position:absolute;left:0}
@@ -184,9 +194,7 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 .detail-context{margin-top:12px;padding-top:10px;border-top:1px solid var(--border-gold);font-size:11px;color:var(--text-secondary);line-height:1.6}
 .detail-context h4{color:var(--gold);font-size:11px;margin-bottom:3px;font-weight:500}
 
-/* Feedback Button & Modal */
-.feedback-btn{position:fixed;right:10px;bottom:90px;width:36px;height:36px;background:rgba(10,10,20,0.92);border:1px solid var(--border-gold);border-radius:50%;color:var(--gold);font-size:16px;cursor:pointer;z-index:100;display:flex;align-items:center;justify-content:center;transition:all 0.2s;opacity:0.7;line-height:1}
-.feedback-btn:hover{background:rgba(201,169,110,0.15);opacity:1;transform:scale(1.1)}
+/* Feedback Modal (button moved into right-toolbar) */
 .feedback-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:300;display:none;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(2px)}
 .feedback-overlay.active{display:flex}
 .feedback-panel{background:var(--bg-secondary);border:1px solid var(--border-gold);border-radius:12px;max-width:420px;width:100%;padding:20px;box-shadow:0 0 30px rgba(201,169,110,0.08)}
@@ -218,7 +226,9 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
   .filter-bar{bottom:6px;padding:2px 5px}
   .filter-chip{font-size:8px;padding:1px 5px}
   .scale-bar{bottom:28px}
-  .density-control{bottom:38px;right:8px}
+  .right-toolbar{bottom:38px;right:6px;padding:6px 4px}
+  .toolbar-btn{width:28px;height:28px;font-size:12px}
+  .density-slider{width:40px}
   .event-card{max-width:200px}
   .event-card.expanded{max-width:300px}
   .dynasty-label span{font-size:9px}
@@ -257,15 +267,16 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
 
 <button class="btn-home" id="btnHome" onclick="goHome()" title="回到当前位置">⌂</button>
 
-<div class="density-control">
-  <span class="density-label">密度</span>
-  <input type="range" class="density-slider" id="densitySlider" min="0.3" max="3" step="0.1" value="1">
-  <span class="density-value" id="densityValue">1.0x</span>
-</div>
-
-<div class="density-control" style="bottom:100px;gap:4px">
-  <span class="density-label" style="font-size:7px">人口</span>
-  <button class="btn" id="popToggle" style="font-size:9px;padding:2px 6px;border-radius:4px" onclick="togglePopCurve()">📈</button>
+<!-- Right Toolbar (人口/反馈/密度) -->
+<div class="right-toolbar" id="rightToolbar">
+  <button class="toolbar-btn active" id="popToggle" title="人口曲线" onclick="togglePopCurve()">📈</button>
+  <button class="toolbar-btn" id="feedbackBtn" title="反馈建议">💬</button>
+  <div class="toolbar-divider"></div>
+  <div class="density-section">
+    <span class="density-label">密度</span>
+    <input type="range" class="density-slider" id="densitySlider" min="0.3" max="3" step="0.1" value="1">
+    <span class="density-value" id="densityValue">1.0x</span>
+  </div>
 </div>
 
 <div class="timeline-viewport" id="viewport">
@@ -293,7 +304,6 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
   <div class="detail-panel" id="detailPanel"></div>
 </div>
 
-<button class="feedback-btn" id="feedbackBtn" title="反馈建议">💬</button>
 <div class="feedback-overlay" id="feedbackOverlay">
   <div class="feedback-panel">
     <div class="feedback-title"><span>📝 反馈与建议</span><button class="feedback-close" id="feedbackClose">✕</button></div>
@@ -367,19 +377,41 @@ const dynasties=[
 ];
 
 // ============ Historical Population Data (millions) ============
-// Based on scholarly estimates of China's population at key historical points
+// Based on scholarly estimates; more points = smoother curve + better accuracy
 const POP_DATA = [
-  {year:-2000,pop:13},{year:-1500,pop:15},{year:-1000,pop:20},{year:-700,pop:20},
-  {year:-400,pop:25},{year:-221,pop:20},{year:-1,pop:59},{year:57,pop:21},
-  {year:157,pop:56},{year:220,pop:16},{year:280,pop:24},{year:520,pop:50},
-  {year:609,pop:46},{year:755,pop:80},{year:960,pop:32},{year:1120,pop:120},
-  {year:1200,pop:115},{year:1290,pop:75},{year:1400,pop:65},{year:1500,pop:110},
-  {year:1600,pop:150},{year:1680,pop:120},{year:1740,pop:180},{year:1790,pop:300},
-  {year:1840,pop:410},{year:1870,pop:350},{year:1910,pop:430},{year:1930,pop:480},
-  {year:1950,pop:550},{year:1960,pop:660},{year:1970,pop:800},{year:1980,pop:980},
-  {year:1990,pop:1130},{year:2000,pop:1260},{year:2010,pop:1340},{year:2020,pop:1400}
+  {year:-2000,pop:13},{year:-1500,pop:15},{year:-1000,pop:20},{year:-800,pop:20},
+  {year:-600,pop:20},{year:-400,pop:25},{year:-221,pop:20},{year:-202,pop:16},
+  {year:-1,pop:59},{year:57,pop:21},{year:105,pop:53},{year:157,pop:56},
+  {year:220,pop:16},{year:280,pop:24},{year:370,pop:30},{year:520,pop:50},
+  {year:609,pop:46},{year:705,pop:58},{year:755,pop:80},{year:820,pop:50},
+  {year:960,pop:32},{year:1000,pop:55},{year:1060,pop:90},{year:1120,pop:120},
+  {year:1200,pop:115},{year:1235,pop:100},{year:1290,pop:75},{year:1330,pop:68},
+  {year:1400,pop:65},{year:1450,pop:80},{year:1500,pop:110},{year:1550,pop:140},
+  {year:1600,pop:150},{year:1620,pop:120},{year:1660,pop:80},{year:1680,pop:120},
+  {year:1710,pop:150},{year:1740,pop:180},{year:1770,pop:250},{year:1790,pop:300},
+  {year:1810,pop:350},{year:1840,pop:410},{year:1860,pop:380},{year:1870,pop:350},
+  {year:1890,pop:395},{year:1910,pop:430},{year:1920,pop:460},{year:1930,pop:480},
+  {year:1940,pop:510},{year:1950,pop:550},{year:1955,pop:610},{year:1960,pop:660},
+  {year:1965,pop:720},{year:1970,pop:800},{year:1975,pop:920},{year:1980,pop:980},
+  {year:1985,pop:1050},{year:1990,pop:1130},{year:1995,pop:1200},{year:2000,pop:1260},
+  {year:2005,pop:1300},{year:2010,pop:1340},{year:2015,pop:1370},{year:2020,pop:1400}
 ];
-const POP_MAX = 1400;
+const POP_MAX = 1500;
+
+// Population milestones for annotation
+const POP_MILESTONES = [
+  {year:-1,pop:59,label:'西汉巅峰 ~5900万'},
+  {year:157,pop:56,label:'东汉巅峰 ~5600万'},
+  {year:220,pop:16,label:'三国谷底 ~1600万'},
+  {year:755,pop:80,label:'盛唐巅峰 ~8000万'},
+  {year:1120,pop:120,label:'北宋破亿 ~1.2亿'},
+  {year:1660,pop:80,label:'明清之际 人口减半'},
+  {year:1790,pop:300,label:'清朝破3亿'},
+  {year:1840,pop:410,label:'道光4.1亿'},
+  {year:1950,pop:550,label:'新中国5.5亿'},
+  {year:1980,pop:980,label:'近10亿'},
+  {year:2020,pop:1400,label:'14亿'}
+];
 
 // Interpolate population at any year
 function getPopAtYear(y) {
@@ -526,8 +558,16 @@ let densityMultiplier=1.0;
 let showPopCurve=true;
 function togglePopCurve(){
   showPopCurve=!showPopCurve;
-  document.getElementById('popToggle').style.opacity=showPopCurve?1:0.4;
+  const btn=document.getElementById('popToggle');
+  btn.classList.toggle('active',showPopCurve);
   requestRender();
+}
+
+// Format population value (millions → Chinese units)
+function formatPop(millions){
+  const wan=millions*100;
+  if(wan>=10000)return(wan/10000).toFixed(wan>=100000?0:1)+'亿';
+  return Math.round(wan)+'万';
 }
 
 // ============ rAF Batching ============
@@ -839,24 +879,44 @@ function render(){
   // Close area path
   popAreaPath += 'L' + yearToX(popEnd) + ' ' + (popBaseY + popBandH - 4) + 'Z';
 
-  // Focus dynasty affects pop curve opacity
   const popCurveOpacity = 0.3;
   const popAreaOpacity = 0.04;
+  const zl = getZoomLevel();
 
   if (popPath) {
     html += '<svg class="pop-curve-svg" viewBox="0 0 ' + vw + ' ' + vh + '">';
     html += '<path class="pop-curve-area" d="' + popAreaPath + '" fill="rgba(201,169,110,' + popAreaOpacity + ')" style="opacity:' + popAreaOpacity * 8 + '"/>';
     html += '<path class="pop-curve" d="' + popPath + '" style="opacity:' + popCurveOpacity + '"/>';
 
-    // Current year population dot
+    // Population milestones (visible at zoom level 3+)
+    if (zl >= 3) {
+      POP_MILESTONES.forEach(m => {
+        if (m.year < visS - 100 || m.year > visE + 100) return;
+        const mx = yearToX(m.year);
+        const mh = (m.pop / POP_MAX) * popMaxH;
+        const my = popBaseY + popBandH - 4 - mh;
+        if (mx < -40 || mx > vw + 40) return;
+        // Dashed line from curve to label
+        html += '<line class="pop-milestone-line' + (zl >= 3 ? ' visible' : '') + '" x1="' + mx + '" y1="' + my + '" x2="' + mx + '" y2="' + (my - 14) + '"/>';
+        html += '<text class="pop-milestone' + (zl >= 3 ? ' visible' : '') + '" x="' + (mx + 3) + '" y="' + (my - 17) + '">' + m.label + '</text>';
+      });
+    }
+
+    // Current year population dot + label
     const centerPop = getPopAtYear(Math.round(centerYear));
     const centerPopH = (centerPop / POP_MAX) * popMaxH;
     const centerPopY = popBaseY + popBandH - 4 - centerPopH;
     const centerPopX = yearToX(centerYear);
     if (centerPopX > -20 && centerPopX < vw + 20) {
-      html += '<circle class="pop-dot-glow" cx="' + centerPopX + '" cy="' + centerPopY + '" r="8"/>';
-      html += '<circle class="pop-dot" cx="' + centerPopX + '" cy="' + centerPopY + '" r="3.5"/>';
-      html += '<text class="pop-label" x="' + (centerPopX + 8) + '" y="' + (centerPopY + 3) + '">' + (centerPop >= 10000 ? (centerPop / 10000).toFixed(1) + '亿' : centerPop >= 1000 ? (centerPop / 1000).toFixed(1) + '千万' : Math.round(centerPop) + '万') + '</text>';
+      const popText = formatPop(centerPop);
+      html += '<circle class="pop-dot-glow" cx="' + centerPopX + '" cy="' + centerPopY + '" r="10"/>';
+      html += '<circle class="pop-dot" cx="' + centerPopX + '" cy="' + centerPopY + '" r="4"/>';
+      // Background rect for readability
+      const tw = popText.length * 10 + 12;
+      const tx = centerPopX + 10;
+      const ty = centerPopY - 10;
+      html += '<rect class="pop-label-bg" x="' + (tx - 4) + '" y="' + (ty - 10) + '" width="' + tw + '" height="16"/>';
+      html += '<text class="pop-label" x="' + tx + '" y="' + ty + '">' + popText + '</text>';
     }
 
     html += '</svg>';
@@ -1107,7 +1167,7 @@ function inertia(){
 // ============ Mouse ============
 let mDown=false, mSX=0, mSO=0;
 viewport.addEventListener('mousedown',e=>{
-  if(e.target.closest('.event-card,.btn,.filter-chip,.density-control,.dynasty-nav'))return;
+  if(e.target.closest('.event-card,.btn,.filter-chip,.right-toolbar,.dynasty-nav'))return;
   mDown=true;mSX=e.clientX;mSO=offsetX;velocity=0;lastPointerX=e.clientX;lastTime=Date.now();
   manualFocusDynasty=null; // user started dragging, release manual focus
 });
