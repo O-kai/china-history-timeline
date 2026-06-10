@@ -1,16 +1,11 @@
 {
-  "pages": [
-    "pages/index/index"
-  ],
+  "pages": ["pages/index/index"],
   "window": {
     "navigationBarTitleText": "中华历史时间轴",
     "navigationBarBackgroundColor": "#0a0a14",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#0a0a14"
   },
-  "networkTimeout": {
-    "request": 10000,
-    "downloadFile": 10000
-  },
+  "style": "v2",
   "sitemapLocation": "sitemap.json"
 }

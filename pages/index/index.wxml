@@ -1,1 +1,112 @@
-<web-view src="{{url}}" bindload="onLoad" binderror="onError"></web-view>
+<!-- 中华历史时间轴 - 原生小程序 -->
+<view class="container">
+  <!-- Canvas 时间轴主体 -->
+  <canvas type="2d" id="timelineCanvas" class="timeline-canvas"
+    bindtouchstart="onTouchStart" bindtouchmove="onTouchMove" bindtouchend="onTouchEnd">
+  </canvas>
+
+  <!-- 顶部状态栏 -->
+  <view class="header" style="padding-top:{{statusBarHeight}}px">
+    <text class="header-title">中华历史时间轴</text>
+    <view class="search-box" bindtap="onSearchTap">
+      <text class="search-icon">🔍</text>
+      <text class="search-placeholder">搜索事件、人物、朝代...</text>
+    </view>
+  </view>
+
+  <!-- 朝代快跳导航 -->
+  <scroll-view class="dynasty-nav" scroll-x enhanced show-scrollbar="{{false}}">
+    <view class="dynasty-nav-inner">
+      <view wx:for="{{dynastyList}}" wx:key="name"
+        class="dynasty-nav-item {{currentDynasty===item.name?'focus':''}}"
+        data-dynasty="{{item.name}}" bindtap="onDynastyTap">
+        {{item.name}}
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 焦点指示器 -->
+  <view class="focus-indicator">
+    <text>{{focusText}}</text>
+  </view>
+
+  <!-- 右侧工具栏 -->
+  <view class="right-toolbar">
+    <view class="toolbar-btn {{showPopCurve?'active':''}}" bindtap="togglePopCurve">
+      <text>📈</text>
+    </view>
+    <view class="toolbar-btn" bindtap="onFeedbackTap">
+      <text>💬</text>
+    </view>
+    <view class="toolbar-divider"></view>
+    <view class="density-section">
+      <text class="density-label">密度</text>
+      <slider class="density-slider" min="30" max="300" value="{{densityVal}}" step="10"
+        activeColor="#c9a96e" backgroundColor="rgba(201,169,110,0.25)" block-size="12"
+        bindchange="onDensityChange"/>
+      <text class="density-value">{{densityText}}</text>
+    </view>
+  </view>
+
+  <!-- 底部分类筛选 -->
+  <view class="filter-bar">
+    <view class="filter-chip {{activeCats.all?'active':''}}" data-cat="all" bindtap="onFilterTap"
+      style="color:#c9a96e">全部</view>
+    <view class="filter-chip {{activeCats['政治']?'active':''}}" data-cat="政治" bindtap="onFilterTap"
+      style="color:#e74c3c">政治</view>
+    <view class="filter-chip {{activeCats['军事']?'active':''}}" data-cat="军事" bindtap="onFilterTap"
+      style="color:#e67e22">军事</view>
+    <view class="filter-chip {{activeCats['科技']?'active':''}}" data-cat="科技" bindtap="onFilterTap"
+      style="color:#3498db">科技</view>
+    <view class="filter-chip {{activeCats['文化']?'active':''}}" data-cat="文化" bindtap="onFilterTap"
+      style="color:#9b59b6">文化</view>
+    <view class="filter-chip {{activeCats['人物']?'active':''}}" data-cat="人物" bindtap="onFilterTap"
+      style="color:#f39c12">人物</view>
+    <view class="filter-chip {{activeCats['社会']?'active':''}}" data-cat="社会" bindtap="onFilterTap"
+      style="color:#2ecc71">社会</view>
+  </view>
+
+  <!-- 详情面板 -->
+  <view class="detail-overlay {{detailShow?'active':''}}" bindtap="closeDetail">
+    <view class="detail-panel" catchtap="">
+      <view class="detail-close" bindtap="closeDetail">✕</view>
+      <text class="detail-year">{{detailData.yearText}}</text>
+      <text class="detail-title">{{detailData.title}}</text>
+      <view class="detail-tags">
+        <text class="detail-tag" style="color:{{detailData.catColor}};border-color:{{detailData.catColor}}">
+          {{detailData.category}}
+        </text>
+        <text class="detail-tag" style="color:#c9a96e;border-color:#c9a96e">
+          {{detailData.dynasty}}
+        </text>
+        <text class="detail-tag" style="color:#a89b8c;border-color:#5a5248">
+          {{detailData.starText}}
+        </text>
+      </view>
+      <text class="detail-desc">{{detailData.detail}}</text>
+      <view class="detail-context" wx:if="{{detailData.context}}">
+        <text class="detail-context-title">历史背景</text>
+        <text class="detail-context-text">{{detailData.context}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 搜索面板 -->
+  <view class="search-overlay {{searchShow?'active':''}}" bindtap="closeSearch">
+    <view class="search-panel" catchtap="">
+      <view class="search-header">
+        <input class="search-input" placeholder="搜索事件、人物、朝代..." focus="{{searchShow}}"
+          bindinput="onSearchInput" confirm-type="search"/>
+        <text class="search-cancel" bindtap="closeSearch">取消</text>
+      </view>
+      <scroll-view class="search-results" scroll-y>
+        <view wx:for="{{searchResults}}" wx:key="index" class="search-item"
+          data-idx="{{item.idx}}" bindtap="onSearchResultTap">
+          <text class="si-year">{{item.yearText}}</text>
+          <text class="si-title">{{item.title}}</text>
+          <text class="si-cat" style="color:{{item.catColor}}">{{item.category}}</text>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+</view>

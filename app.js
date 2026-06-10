@@ -1,3 +1,1 @@
-App({
-  onLaunch: function () {}
-})
+App({})

@@ -1,5 +1,4 @@
 {
-  "navigationBarTitleText": "中华历史时间轴",
-  "navigationBarBackgroundColor": "#0a0a14",
-  "navigationBarTextStyle": "white"
+  "usingComponents": {},
+  "navigationStyle": "custom"
 }
