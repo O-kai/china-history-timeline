@@ -555,6 +555,25 @@ let touchState='idle', lastPinchTime=0, pinchCurrentDist=0, pinchConfirmed=false
 const PINCH_COOLDOWN=300, PINCH_DEADZONE=10;
 let velocity=0;
 let densityMultiplier=1.0;
+// ============ 边界限制 ============
+// 确保视口不会滑出数据范围（DATA_MIN~DATA_MAX）
+// 允许 20% 视口宽度的弹性余量
+function clampOffset(){
+  const vw=viewport.clientWidth, ppy=pixelsPerYear;
+  // 最右：最早年份(DATA_MIN)不能滑过左边界太多
+  const maxOX=-DATA_MIN*ppy+vw*0.2;
+  // 最左：最晚年份(DATA_MAX)不能滑过右边界太多
+  const minOX=vw*0.8-DATA_MAX*ppy;
+  if(offsetX>maxOX){offsetX=maxOX;velocity=0}
+  else if(offsetX<minOX){offsetX=minOX;velocity=0}
+}
+function clampOffsetSoft(){
+  const vw=viewport.clientWidth, ppy=pixelsPerYear;
+  const maxOX=-DATA_MIN*ppy+vw*0.2;
+  const minOX=vw*0.8-DATA_MAX*ppy;
+  if(offsetX>maxOX)offsetX=maxOX;
+  else if(offsetX<minOX)offsetX=minOX;
+}
 let showPopCurve=true;
 function togglePopCurve(){
   showPopCurve=!showPopCurve;
@@ -1056,13 +1075,14 @@ function doSearch(){
   else{searchResults.innerHTML=m.map(e=>{const i=eventIndex.get(e),cc=getCatColor(e.category);return'<div class="search-item" onclick="jumpToEvent('+i+')"><span class="si-year">'+formatYearFull(e)+'</span><span class="si-title">'+e.title+'</span><span class="si-cat" style="color:'+cc+';background:'+cc+'15">'+e.category+'</span></div>'}).join('')}
   searchResults.classList.add('active');
 }
-function jumpToEvent(idx){const e=events[idx],vw=viewport.clientWidth;offsetX=vw/2-e.year*pixelsPerYear;expandedCard=idx;searchResults.classList.remove('active');searchInput.value='';searchInput.blur();requestRender()}
+function jumpToEvent(idx){const e=events[idx],vw=viewport.clientWidth;offsetX=vw/2-e.year*pixelsPerYear;clampOffsetSoft();expandedCard=idx;searchResults.classList.remove('active');searchInput.value='';searchInput.blur();requestRender()}
 document.addEventListener('click',e=>{if(!e.target.closest('.search-box'))searchResults.classList.remove('active')});
 
 // ============ Navigation ============
 function goHome(){
   const centerYear=(DATA_MIN+DATA_MAX)/2;
   offsetX=viewport.clientWidth/2-centerYear*pixelsPerYear;
+  clampOffsetSoft();
   expandedCard=null;requestRender();
 }
 function animateTo(ty,tppy){
@@ -1071,6 +1091,7 @@ function animateTo(ty,tppy){
   function step(now){
     const t=Math.min((now-st)/dur,1),ease=1-Math.pow(1-t,3);
     pixelsPerYear=sp+(ep-sp)*ease;offsetX=so+(eo-so)*ease;
+    clampOffsetSoft();
     requestRender();if(t<1)requestAnimationFrame(step);else isAnimating=false;
   }
   requestAnimationFrame(step);
@@ -1106,6 +1127,7 @@ viewport.addEventListener('touchmove',e=>{
     const dx=e.touches[0].clientX-dragStartX;
     if(Math.abs(dx)>5)touchMoved=true;
     offsetX=dragStartOffsetX+dx;
+    clampOffsetSoft();
     const now=Date.now(),dt=now-lastTime;
     if(dt>0)velocity=(e.touches[0].clientX-lastPointerX)/dt*16;
     lastPointerX=e.touches[0].clientX;lastTime=now;
@@ -1120,6 +1142,7 @@ viewport.addEventListener('touchmove',e=>{
       let np=pinchStartPPY*(pinchCurrentDist/pinchStartDist);
       np=Math.max(0.01,Math.min(30,np));pixelsPerYear=np;
       offsetX=pinchCenterX-pinchCenterYear*pixelsPerYear;
+      clampOffsetSoft();
     }
     requestRender();showZI();
   }
@@ -1161,7 +1184,7 @@ viewport.addEventListener('touchend',e=>{
 });
 
 function inertia(){
-  if(Math.abs(velocity)>0.3){offsetX+=velocity;velocity*=0.93;requestRender();requestAnimationFrame(inertia)}
+  if(Math.abs(velocity)>0.3){offsetX+=velocity;velocity*=0.93;clampOffset();requestRender();if(Math.abs(velocity)>0.3)requestAnimationFrame(inertia)}
 }
 
 // ============ Mouse ============
@@ -1173,6 +1196,7 @@ viewport.addEventListener('mousedown',e=>{
 });
 viewport.addEventListener('mousemove',e=>{
   if(!mDown)return;offsetX=mSO+(e.clientX-mSX);
+  clampOffsetSoft();
   const now=Date.now(),dt=now-lastTime;
   if(dt>0)velocity=(e.clientX-lastPointerX)/dt*16;
   lastPointerX=e.clientX;lastTime=now;requestRender();
@@ -1185,6 +1209,7 @@ viewport.addEventListener('wheel',e=>{
   e.preventDefault();const r=viewport.getBoundingClientRect(),mx=e.clientX-r.left,my=xToYear(mx);
   let np=pixelsPerYear*(e.deltaY>0?0.9:1.11);np=Math.max(0.01,Math.min(30,np));
   pixelsPerYear=np;offsetX=mx-my*pixelsPerYear;
+  clampOffsetSoft();
   manualFocusDynasty=null; // user is scrolling, release manual focus
   requestRender();showZI();
 },{passive:false});
@@ -1221,6 +1246,7 @@ document.querySelectorAll('.filter-chip').forEach(chip=>{
 (function(){
   const centerYear=(DATA_MIN+DATA_MAX)/2;
   offsetX=viewport.clientWidth/2-centerYear*pixelsPerYear;
+  clampOffsetSoft();
 })();
 requestRender();
 window.addEventListener('resize',()=>requestRender());
@@ -1228,10 +1254,10 @@ window.addEventListener('resize',()=>requestRender());
 // ============ Keyboard ============
 document.addEventListener('keydown',e=>{
   const step=viewport.clientWidth*0.3;
-  if(e.key==='ArrowLeft'){offsetX+=step;requestRender()}
-  if(e.key==='ArrowRight'){offsetX-=step;requestRender()}
-  if(e.key==='+'||e.key==='='){const cx=viewport.clientWidth/2,cy=xToYear(cx);pixelsPerYear=Math.min(30,pixelsPerYear*1.2);offsetX=cx-cy*pixelsPerYear;requestRender();showZI()}
-  if(e.key==='-'){const cx=viewport.clientWidth/2,cy=xToYear(cx);pixelsPerYear=Math.max(0.01,pixelsPerYear/1.2);offsetX=cx-cy*pixelsPerYear;requestRender();showZI()}
+  if(e.key==='ArrowLeft'){offsetX+=step;clampOffsetSoft();requestRender()}
+  if(e.key==='ArrowRight'){offsetX-=step;clampOffsetSoft();requestRender()}
+  if(e.key==='+'||e.key==='='){const cx=viewport.clientWidth/2,cy=xToYear(cx);pixelsPerYear=Math.min(30,pixelsPerYear*1.2);offsetX=cx-cy*pixelsPerYear;clampOffsetSoft();requestRender();showZI()}
+  if(e.key==='-'){const cx=viewport.clientWidth/2,cy=xToYear(cx);pixelsPerYear=Math.max(0.01,pixelsPerYear/1.2);offsetX=cx-cy*pixelsPerYear;clampOffsetSoft();requestRender();showZI()}
   if(e.key==='Escape'){closeDetail();closeFeedback()}
   if(e.key==='Home'||e.key==='h')goHome();
 });
