@@ -94,6 +94,7 @@ Page({
       // Init position after we know canvas size
       const centerYear = (DATA_MIN + DATA_MAX) / 2;
       this.offsetX = this._cw / 2 - centerYear * this.pixelsPerYear;
+      this._clampOffsetSoft();
 
       this._render();
     });
@@ -103,6 +104,22 @@ Page({
   _yearToX(y) { return y * this.pixelsPerYear + this.offsetX; },
   _xToYear(x) { return (x - this.offsetX) / this.pixelsPerYear; },
   _formatYear(y) { return y < 0 ? '前' + Math.abs(y) + '年' : y + '年'; },
+
+  // ===== 边界限制 =====
+  _clampOffset() {
+    const vw = this._cw, ppy = this.pixelsPerYear;
+    const maxOX = -DATA_MIN * ppy + vw * 0.2;
+    const minOX = vw * 0.8 - DATA_MAX * ppy;
+    if (this.offsetX > maxOX) { this.offsetX = maxOX; this._velocity = 0; }
+    else if (this.offsetX < minOX) { this.offsetX = minOX; this._velocity = 0; }
+  },
+  _clampOffsetSoft() {
+    const vw = this._cw, ppy = this.pixelsPerYear;
+    const maxOX = -DATA_MIN * ppy + vw * 0.2;
+    const minOX = vw * 0.8 - DATA_MAX * ppy;
+    if (this.offsetX > maxOX) this.offsetX = maxOX;
+    else if (this.offsetX < minOX) this.offsetX = minOX;
+  },
 
   _getZoomLevel() {
     const ppy = this.pixelsPerYear;
@@ -444,6 +461,7 @@ Page({
       const x = e.touches[0].x * this._dpr;
       const dx = x - this._lastTouchX;
       this.offsetX += dx;
+      this._clampOffsetSoft();
       const now = Date.now();
       const dt = now - this._lastTime;
       if (dt > 0) this._velocity = dx / dt * 16;
@@ -460,6 +478,7 @@ Page({
         const centerYear = this._xToYear(centerX);
         this.pixelsPerYear = Math.max(0.01, Math.min(30, this.pixelsPerYear * scale));
         this.offsetX = centerX - centerYear * this.pixelsPerYear;
+        this._clampOffsetSoft();
         this.manualFocusDynasty = null;
       }
       this._pinchDist = dist;
@@ -492,8 +511,9 @@ Page({
     if (Math.abs(this._velocity) > 0.3) {
       this.offsetX += this._velocity;
       this._velocity *= 0.93;
+      this._clampOffset();
       this._render();
-      requestAnimationFrame(() => this._inertia());
+      if (Math.abs(this._velocity) > 0.3) requestAnimationFrame(() => this._inertia());
     }
   },
 
@@ -521,6 +541,7 @@ Page({
     const targetPPY = Math.max(0.15, (vw * 0.6) / Math.max(dynastySpan, 1));
     this.pixelsPerYear = Math.min(30, Math.max(0.01, targetPPY));
     this.offsetX = vw / 2 - centerYear * this.pixelsPerYear;
+    this._clampOffsetSoft();
     this._render();
   },
 
@@ -568,6 +589,7 @@ Page({
     // Navigate to event
     this.pixelsPerYear = 1.0;
     this.offsetX = this._cw / 2 - ev.year * this.pixelsPerYear;
+    this._clampOffsetSoft();
     this.setData({ searchShow: false });
     this._render();
     setTimeout(() => this._showDetail(ev), 300);
