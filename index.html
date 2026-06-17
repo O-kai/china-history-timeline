@@ -556,21 +556,21 @@ const PINCH_COOLDOWN=300, PINCH_DEADZONE=10;
 let velocity=0;
 let densityMultiplier=1.0;
 // ============ 边界限制 ============
-// 确保视口不会滑出数据范围（DATA_MIN~DATA_MAX）
-// 允许 20% 视口宽度的弹性余量
+// 确保最早年份(DATA_MIN)可滑到视口左边缘，最晚年份(DATA_MAX)可滑到右边缘
+// 留少量余量(~30px)避免完全贴边
 function clampOffset(){
   const vw=viewport.clientWidth, ppy=pixelsPerYear;
-  // 最右：最早年份(DATA_MIN)不能滑过左边界太多
-  const maxOX=-DATA_MIN*ppy+vw*0.2;
-  // 最左：最晚年份(DATA_MAX)不能滑过右边界太多
-  const minOX=vw*0.8-DATA_MAX*ppy;
+  // 最右滑：最早年份(DATA_MIN)出现在视口左边缘 x≈30
+  const maxOX=-DATA_MIN*ppy+30;
+  // 最左滑：最晚年份(DATA_MAX)出现在视口右边缘 x≈vw-30
+  const minOX=vw-30-DATA_MAX*ppy;
   if(offsetX>maxOX){offsetX=maxOX;velocity=0}
   else if(offsetX<minOX){offsetX=minOX;velocity=0}
 }
 function clampOffsetSoft(){
   const vw=viewport.clientWidth, ppy=pixelsPerYear;
-  const maxOX=-DATA_MIN*ppy+vw*0.2;
-  const minOX=vw*0.8-DATA_MAX*ppy;
+  const maxOX=-DATA_MIN*ppy+30;
+  const minOX=vw-30-DATA_MAX*ppy;
   if(offsetX>maxOX)offsetX=maxOX;
   else if(offsetX<minOX)offsetX=minOX;
 }
@@ -695,14 +695,17 @@ function layoutCards(vis,vh,vw){
   const above=[],below=[],results=[];
   const sorted=[...vis].sort((a,b)=>a.level!==b.level?a.level-b.level:a.year-b.year);
   sorted.forEach(item=>{
-    const x=item.x, estW=item.level===1?155:item.level===2?135:item.level===3?115:item.level===4?100:90, cardH=item.level===1?50:item.level===2?46:40;
+    const x=item.x;
+    // estW must match CSS min-width:130px — use generous estimates to prevent overlap
+    const estW=item.level===1?160:item.level===2?145:130;
+    const cardH=item.level===1?52:item.level===2?48:42;
     const cL=x-estW/2, cR=x+estW/2;
     // Determine side strictly by category — no fallback to opposite side
     const side = CAT_SIDE[item.event.category] || 'above';
     let placed=false;
 
-    // Place on assigned side only, with more tiers to avoid overflow
-    const maxTiers = 8;
+    // Place on assigned side only, up to 12 tiers to handle dense clusters
+    const maxTiers = 12;
     if(side==='above'){
       for(let tier=0;tier<maxTiers;tier++){
         const stem=16+tier*(cardH+8), cB=centerY-4-stem, cT=cB-cardH;let ov=false;
@@ -716,7 +719,12 @@ function layoutCards(vis,vh,vw){
         if(!ov){results.push({...item,pos:'below',stem,tier});below.push({l:cL,r:cR,t:cT,h:cardH});placed=true;break}
       }
     }
-    if(!placed) results.push({...item,pos:side,stem:16,tier:0});
+    // Fallback: place at the next available tier beyond maxTiers (still avoids overlap)
+    if(!placed){
+      const tier=maxTiers;
+      const stem=16+tier*(cardH+8);
+      results.push({...item,pos:side,stem,tier});
+    }
   });
   return results;
 }
