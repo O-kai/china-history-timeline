@@ -148,17 +148,22 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
   .event-node:hover{z-index:45}
   .event-node:hover .event-card{border-color:var(--gold);box-shadow:0 0 12px rgba(201,169,110,0.1),0 4px 12px rgba(0,0,0,0.3)}
 }
-.event-dot{position:absolute;left:50%;transform:translate(-50%,-50%);border-radius:50%;z-index:5;transition:transform 0.15s,box-shadow 0.15s}
-.event-dot.level-1{width:14px;height:14px;box-shadow:0 0 10px currentColor,0 0 20px rgba(201,169,110,0.15)}
-.event-dot.level-2{width:10px;height:10px;box-shadow:0 0 7px currentColor,0 0 12px rgba(201,169,110,0.05)}
-.event-dot.level-3{width:7px;height:7px;box-shadow:0 0 5px currentColor}
-.event-dot.level-4{width:5px;height:5px;box-shadow:0 0 3px currentColor;opacity:0.85}
-.event-dot.level-5{width:4px;height:4px;box-shadow:0 0 2px currentColor;opacity:0.65}
-.event-dot::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid currentColor;opacity:0;animation:dotPulse 2.5s ease-in-out infinite}
-.event-dot.level-1::after,.event-dot.level-2::after{opacity:0.15}
+.event-dot{position:absolute;left:50%;transform:translate(-50%,-50%);border-radius:50%;z-index:5;transition:transform 0.15s,box-shadow 0.15s,width 0.2s,height 0.2s}
+.event-dot.level-1{width:22px;height:22px;box-shadow:0 0 14px currentColor,0 0 28px rgba(201,169,110,0.2)}
+.event-dot.level-2{width:15px;height:15px;box-shadow:0 0 10px currentColor,0 0 18px rgba(201,169,110,0.1)}
+.event-dot.level-3{width:9px;height:9px;box-shadow:0 0 6px currentColor}
+.event-dot.level-4{width:5px;height:5px;box-shadow:0 0 3px currentColor;opacity:0.8}
+.event-dot.level-5{width:3px;height:3px;box-shadow:0 0 2px currentColor;opacity:0.55}
+.event-dot::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:1px solid currentColor;opacity:0;animation:dotPulse 2.5s ease-in-out infinite}
+.event-dot.level-1::after,.event-dot.level-2::after{opacity:0.18}
 @keyframes dotPulse{0%,100%{transform:scale(1);opacity:0.2}50%{transform:scale(1.6);opacity:0}}
 
-.event-stem{position:absolute;width:1px;left:50%;transform:translateX(-50%);z-index:1;opacity:0.3}
+/* Active (selected) event: stem thicker, dot bigger, card more prominent */
+.event-node.active .event-stem{width:3px;opacity:0.8}
+.event-node.active .event-dot{transform:translate(-50%,-50%) scale(1.4)}
+.event-node.active .event-card{border-width:2px;box-shadow:0 0 18px rgba(201,169,110,0.2),0 4px 16px rgba(0,0,0,0.4)}
+
+.event-stem{position:absolute;width:1px;left:50%;transform:translateX(-50%);z-index:1;opacity:0.3;transition:width 0.2s,opacity 0.2s}
 .event-stem.above{bottom:50%}
 .event-stem.below{top:50%}
 
@@ -274,8 +279,8 @@ body{background:var(--bg-primary);color:var(--text-primary);font-family:"PingFan
   <div class="toolbar-divider"></div>
   <div class="density-section">
     <span class="density-label">密度</span>
-    <input type="range" class="density-slider" id="densitySlider" min="0.3" max="3" step="0.1" value="1">
-    <span class="density-value" id="densityValue">1.0x</span>
+    <input type="range" class="density-slider" id="densitySlider" min="1" max="5" step="1" value="5">
+    <span class="density-value" id="densityValue">★★★★★</span>
   </div>
 </div>
 
@@ -488,7 +493,8 @@ function jumpToDynasty(name){
   const vw=viewport.clientWidth;
   const dynastySpan=d.end-d.start;
   const targetPPY=Math.max(0.15, (vw*0.6)/Math.max(dynastySpan,1));
-  const clampedPPY=Math.min(30,Math.max(0.01,targetPPY));
+  const minPPY=(vw-60)/(DATA_MAX-DATA_MIN);
+  const clampedPPY=Math.min(30,Math.max(minPPY,targetPPY));
   animateTo(centerYear, clampedPPY);
 }
 
@@ -554,7 +560,7 @@ let expandedCard=null;
 let touchState='idle', lastPinchTime=0, pinchCurrentDist=0, pinchConfirmed=false;
 const PINCH_COOLDOWN=300, PINCH_DEADZONE=10;
 let velocity=0;
-let densityMultiplier=1.0;
+let densityLevel=5; // 1-5 star density: 5=show all, 1=only level-1 events
 // ============ 边界限制 ============
 // 确保最早年份(DATA_MIN)可滑到视口左边缘，最晚年份(DATA_MAX)可滑到右边缘
 // 留少量余量(~30px)避免完全贴边
@@ -607,22 +613,21 @@ function getCatColor(c){return CATS[c]?CATS[c].c:'#c9a96e'}
 function getCatCSS(c){return CATS[c]?CATS[c].s:''}
 
 // ============ Smart Density with Focus Weight ============
-function getMaxVisibleEvents(vw, zl){
-  const base = zl===1 ? Math.floor(vw/100) : zl===2 ? Math.floor(vw/70) : zl===3 ? Math.floor(vw/50) : zl===4 ? Math.floor(vw/40) : Math.floor(vw/30);
-  return Math.max(5, Math.floor(base * densityMultiplier));
-}
-
+// densityLevel: 1-5 star system. 5=show all levels, 1=only level-1 (most important)
+// An event is shown only if event.level <= densityLevel
 function selectVisibleEvents(visS, visE, vw, centerYear){
   const zl = getZoomLevel();
-  const maxEvents = getMaxVisibleEvents(vw, zl);
   const focusDynasty = currentFocusDynasty || getDynastyAtYear(Math.round(centerYear));
 
   let candidates = events.filter(e=>{
     if(!activeCategories.has(e.category)) return false;
+    if(e.level > densityLevel) return false; // density filter: hide events below density level
     if(zl < e.level) return false;
     return e.year >= visS && e.year <= visE;
   });
 
+  // If all candidates fit, return them all
+  const maxEvents = zl===1 ? Math.floor(vw/100) : zl===2 ? Math.floor(vw/70) : zl===3 ? Math.floor(vw/50) : zl===4 ? Math.floor(vw/40) : Math.floor(vw/30);
   if(candidates.length <= maxEvents) return candidates;
 
   // Sort by focus weight first, then level, then year
@@ -1148,7 +1153,11 @@ viewport.addEventListener('touchmove',e=>{
     pinchConfirmed=true;
     if(pinchStartDist>0){
       let np=pinchStartPPY*(pinchCurrentDist/pinchStartDist);
-      np=Math.max(0.01,Math.min(30,np));pixelsPerYear=np;
+      // Min PPY: ensure boundary constraints are valid (maxOX >= minOX)
+      // When PPY too small, maxOX < minOX causing edge-jumping. Solve: (vw-60)/(DATA_MAX-DATA_MIN)
+      const vw=viewport.clientWidth;
+      const minPPY=(vw-60)/(DATA_MAX-DATA_MIN);
+      np=Math.max(minPPY,Math.min(30,np));pixelsPerYear=np;
       offsetX=pinchCenterX-pinchCenterYear*pixelsPerYear;
       clampOffsetSoft();
     }
@@ -1215,7 +1224,11 @@ viewport.addEventListener('mouseleave',()=>{mDown=false});
 // ============ Wheel ============
 viewport.addEventListener('wheel',e=>{
   e.preventDefault();const r=viewport.getBoundingClientRect(),mx=e.clientX-r.left,my=xToYear(mx);
-  let np=pixelsPerYear*(e.deltaY>0?0.9:1.11);np=Math.max(0.01,Math.min(30,np));
+  let np=pixelsPerYear*(e.deltaY>0?0.9:1.11);
+  // Min PPY: ensure boundary constraints are valid (maxOX >= minOX)
+  const vw=viewport.clientWidth;
+  const minPPY=(vw-60)/(DATA_MAX-DATA_MIN);
+  np=Math.max(minPPY,Math.min(30,np));
   pixelsPerYear=np;offsetX=mx-my*pixelsPerYear;
   clampOffsetSoft();
   manualFocusDynasty=null; // user is scrolling, release manual focus
@@ -1228,9 +1241,10 @@ function showZI(){zoomIndicator.textContent=getZoomLabel();zoomIndicator.classLi
 // ============ Fullscreen ============
 function toggleFullscreen(){if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen()}
 
-// ============ Density Slider ============
+// ============ Density Slider (1-5 star system) ============
+function densityStars(n){return '★'.repeat(n)+'☆'.repeat(5-n)}
 densitySlider.addEventListener('input',function(){
-  densityMultiplier=parseFloat(this.value);densityValueEl.textContent=densityMultiplier.toFixed(1)+'x';requestRender();
+  densityLevel=parseInt(this.value);densityValueEl.textContent=densityStars(densityLevel);requestRender();
 });
 
 // ============ Filters ============
@@ -1265,7 +1279,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft'){offsetX+=step;clampOffsetSoft();requestRender()}
   if(e.key==='ArrowRight'){offsetX-=step;clampOffsetSoft();requestRender()}
   if(e.key==='+'||e.key==='='){const cx=viewport.clientWidth/2,cy=xToYear(cx);pixelsPerYear=Math.min(30,pixelsPerYear*1.2);offsetX=cx-cy*pixelsPerYear;clampOffsetSoft();requestRender();showZI()}
-  if(e.key==='-'){const cx=viewport.clientWidth/2,cy=xToYear(cx);pixelsPerYear=Math.max(0.01,pixelsPerYear/1.2);offsetX=cx-cy*pixelsPerYear;clampOffsetSoft();requestRender();showZI()}
+  if(e.key==='-'){const vw=viewport.clientWidth;const minPPY=(vw-60)/(DATA_MAX-DATA_MIN);const cx=viewport.clientWidth/2,cy=xToYear(cx);pixelsPerYear=Math.max(minPPY,pixelsPerYear/1.2);offsetX=cx-cy*pixelsPerYear;clampOffsetSoft();requestRender();showZI()}
   if(e.key==='Escape'){closeDetail();closeFeedback()}
   if(e.key==='Home'||e.key==='h')goHome();
 });
