@@ -188,11 +188,11 @@ const TIMELINE_DATA = [
   - Pinch死区：10px
   - 智能恢复：单指操作后自动恢复滑动模式
 - **快滑惯性**：velocity衰减系数 0.93
-- **边界限制**：最早年份可滑到视口左边缘，最晚年份可滑到右边缘（留30px余量）
+- **边界限制**：最早年份可滑到视口左边缘，最晚年份可滑到右边缘（留5px极小余量（端点几乎到屏幕边缘））
   - 拖动时软限制（clampOffsetSoft）：到达边界自动停住，不中断操作
   - 惯性时硬限制（clampOffset）：到达边界停止惯性并清零速度
   - 缩放/导航/键盘操作均受边界约束
-  - 公式：`maxOX = -DATA_MIN*ppy + 30`（右边界），`minOX = vw - 30 - DATA_MAX*ppy`（左边界）
+  - 公式：`maxOX = -DATA_MIN*ppy + 5`（右边界），`minOX = vw - 5 - DATA_MAX*ppy`（左边界）
 
 ### 6.3 事件交互
 
@@ -279,8 +279,8 @@ const TIMELINE_DATA = [
 - **实现**：
   - `clampOffset()`：硬限制，惯性到边界时停止并清零速度
   - `clampOffsetSoft()`：软限制，拖动时到达边界自动停住
-  - 边界计算：`maxOX = -DATA_MIN*ppy + 30`（右边界），`minOX = vw - 30 - DATA_MAX*ppy`（左边界）
-  - 最早年份(DATA_MIN)可滑到视口左边缘(x≈30)，最晚年份(DATA_MAX)可滑到右边缘(x≈vw-30)
+  - 边界计算：`maxOX = -DATA_MIN*ppy + 5`（右边界），`minOX = vw - 5 - DATA_MAX*ppy`（左边界）
+  - 最早年份(DATA_MIN)可滑到视口左边缘(x≈5)，最晚年份(DATA_MAX)可滑到右边缘(x≈vw-5)
 - **应用位置**：所有修改 `offsetX` 的地方（拖动、缩放、惯性、导航、键盘）
 - **验证方法**：缩放到最大时，夏朝(前2070年)能滑到视口左边缘，2026年能滑到视口右边缘
 

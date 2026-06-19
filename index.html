@@ -567,16 +567,16 @@ let densityLevel=5; // 1-5 star density: 5=show all, 1=only level-1 events
 function clampOffset(){
   const vw=viewport.clientWidth, ppy=pixelsPerYear;
   // 最右滑：最早年份(DATA_MIN)出现在视口左边缘 x≈30
-  const maxOX=-DATA_MIN*ppy+30;
+  const maxOX=-DATA_MIN*ppy+5;
   // 最左滑：最晚年份(DATA_MAX)出现在视口右边缘 x≈vw-30
-  const minOX=vw-30-DATA_MAX*ppy;
+  const minOX=vw-5-DATA_MAX*ppy;
   if(offsetX>maxOX){offsetX=maxOX;velocity=0}
   else if(offsetX<minOX){offsetX=minOX;velocity=0}
 }
 function clampOffsetSoft(){
   const vw=viewport.clientWidth, ppy=pixelsPerYear;
-  const maxOX=-DATA_MIN*ppy+30;
-  const minOX=vw-30-DATA_MAX*ppy;
+  const maxOX=-DATA_MIN*ppy+5;
+  const minOX=vw-5-DATA_MAX*ppy;
   if(offsetX>maxOX)offsetX=maxOX;
   else if(offsetX<minOX)offsetX=minOX;
 }
