@@ -13,6 +13,13 @@ const CATS = {
 
 const DATA_MIN = -2070, DATA_MAX = 2026;
 
+// Density star display
+function densityStars(n) {
+  let s = '';
+  for (let i = 0; i < 5; i++) s += i < n ? '★' : '☆';
+  return s;
+}
+
 Page({
   data: {
     statusBarHeight: 20,
@@ -20,8 +27,8 @@ Page({
     currentDynasty: '',
     focusText: '',
     showPopCurve: true,
-    densityVal: 100,
-    densityText: '1.0x',
+    densityVal: 5,
+    densityText: '★★★★★',
     activeCats: { all: true, '政治': true, '军事': true, '科技': true, '文化': true, '人物': true, '社会': true },
     detailShow: false,
     detailData: {},
@@ -38,11 +45,12 @@ Page({
   events: [],
   offsetX: 0,
   pixelsPerYear: 0.15,
-  densityMultiplier: 1.0,
+  densityLevel: 5,
   showPopCurve: true,
   activeCategories: new Set(['政治', '军事', '科技', '文化', '人物', '社会']),
   currentFocusDynasty: '',
   manualFocusDynasty: null,
+  _activeEvent: null,
 
   // Touch state
   _touchState: 'idle',
@@ -105,20 +113,25 @@ Page({
   _xToYear(x) { return (x - this.offsetX) / this.pixelsPerYear; },
   _formatYear(y) { return y < 0 ? '前' + Math.abs(y) + '年' : y + '年'; },
 
-  // ===== 边界限制 =====
+  // ===== 边界限制（v2.0.1: 5px极小余量，端点几乎到屏幕边缘） =====
   _clampOffset() {
     const vw = this._cw, ppy = this.pixelsPerYear;
-    const maxOX = -DATA_MIN * ppy + vw * 0.2;
-    const minOX = vw * 0.8 - DATA_MAX * ppy;
+    const maxOX = -DATA_MIN * ppy + 5;
+    const minOX = vw - 5 - DATA_MAX * ppy;
     if (this.offsetX > maxOX) { this.offsetX = maxOX; this._velocity = 0; }
     else if (this.offsetX < minOX) { this.offsetX = minOX; this._velocity = 0; }
   },
   _clampOffsetSoft() {
     const vw = this._cw, ppy = this.pixelsPerYear;
-    const maxOX = -DATA_MIN * ppy + vw * 0.2;
-    const minOX = vw * 0.8 - DATA_MAX * ppy;
+    const maxOX = -DATA_MIN * ppy + 5;
+    const minOX = vw - 5 - DATA_MAX * ppy;
     if (this.offsetX > maxOX) this.offsetX = maxOX;
     else if (this.offsetX < minOX) this.offsetX = minOX;
+  },
+
+  // ===== 缩放最小值动态限制 =====
+  _getMinPPY() {
+    return (this._cw - 60) / (DATA_MAX - DATA_MIN);
   },
 
   _getZoomLevel() {
@@ -252,30 +265,13 @@ Page({
       ctx.fillStyle = 'rgba(201,169,110,0.04)';
       ctx.fill();
 
-      // Milestones (Z3+)
-      const zl = this._getZoomLevel();
-      if (zl >= 3) {
-        POP_MILESTONES.forEach(m => {
-          if (m.year < visS - 100 || m.year > visE + 100) return;
-          const mx = this._yearToX(m.year);
-          const mh = (m.pop / POP_MAX) * popMaxH;
-          const my = popBaseY + popBandH - 4 * dpr - mh;
-          if (mx < -30 || mx > cw + 30) return;
-
-          ctx.fillStyle = 'rgba(201,169,110,0.55)';
-          ctx.font = (8 * dpr) + 'px "PingFang SC"';
-          ctx.textAlign = 'left';
-          ctx.fillText(m.label, mx + 4 * dpr, my - 6 * dpr);
-        });
-      }
-
-      // Center year dot + label
+      // Pop label at center
       const centerPop = getPopAtYear(Math.round(centerYear));
-      const centerPopH = (centerPop / POP_MAX) * popMaxH;
-      const centerPopY = popBaseY + popBandH - 4 * dpr - centerPopH;
-      const centerPopX = this._yearToX(centerYear);
-      if (centerPopX > -20 && centerPopX < cw + 20) {
-        // Glow
+      if (centerPop > 0 && yr < 3000) {
+        const centerPopX = this._yearToX(Math.round(centerYear));
+        const centerPopH = (centerPop / POP_MAX) * popMaxH;
+        const centerPopY = popBaseY + popBandH - 4 * dpr - centerPopH;
+        // Background circle
         ctx.beginPath();
         ctx.arc(centerPopX, centerPopY, 10 * dpr, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(201,169,110,0.12)';
@@ -334,10 +330,11 @@ Page({
       const pos = item.pos; // 'above' or 'below'
       const cc = CATS[e.category] ? CATS[e.category].c : '#c9a96e';
       const isImportant = e.level <= 2;
+      const isActive = this._activeEvent && this._activeEvent.year === e.year && this._activeEvent.title === e.title;
 
-      // Dot
-      const dotSize = e.level === 1 ? 14 : e.level === 2 ? 10 : e.level === 3 ? 7 : e.level === 4 ? 5 : 4;
-      const r = dotSize / 2 * dpr;
+      // Dot (v2.0: 22/15/9/5/3 差异加大)
+      const dotSize = e.level === 1 ? 22 : e.level === 2 ? 15 : e.level === 3 ? 9 : e.level === 4 ? 5 : 3;
+      const r = (isActive ? dotSize * 1.4 : dotSize) / 2 * dpr;
       ctx.beginPath();
       ctx.arc(x, centerY, r, 0, Math.PI * 2);
       ctx.fillStyle = cc;
@@ -345,10 +342,15 @@ Page({
       ctx.fill();
       ctx.globalAlpha = 1;
 
-      // Stem
+      // Stem (v2.0: active时加粗加亮)
       const stemLen = (pos === 'above' ? 20 : 20) * dpr;
-      ctx.strokeStyle = 'rgba(201,169,110,0.15)';
-      ctx.lineWidth = 1 * dpr;
+      if (isActive) {
+        ctx.strokeStyle = 'rgba(201,169,110,0.8)';
+        ctx.lineWidth = 3 * dpr;
+      } else {
+        ctx.strokeStyle = 'rgba(201,169,110,0.15)';
+        ctx.lineWidth = 1 * dpr;
+      }
       ctx.beginPath();
       ctx.moveTo(x, centerY + (pos === 'above' ? -r : r));
       ctx.lineTo(x, centerY + (pos === 'above' ? -r - stemLen : r + stemLen));
@@ -366,8 +368,18 @@ Page({
       // Left border
       ctx.fillStyle = cc;
       ctx.fillRect(cardX, cardY, 3 * dpr, cardH);
-      // Border
-      if (isImportant) {
+      // Border (v2.0: active时加粗+增强阴影)
+      if (isActive) {
+        ctx.strokeStyle = '#c9a96e';
+        ctx.lineWidth = 2 * dpr;
+        ctx.strokeRect(cardX, cardY, cardW, cardH);
+        // Glow effect
+        ctx.shadowColor = 'rgba(201,169,110,0.4)';
+        ctx.shadowBlur = 10 * dpr;
+        ctx.strokeRect(cardX, cardY, cardW, cardH);
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+      } else if (isImportant) {
         ctx.strokeStyle = 'rgba(201,169,110,0.4)';
         ctx.lineWidth = 1 * dpr;
         ctx.strokeRect(cardX, cardY, cardW, cardH);
@@ -395,12 +407,15 @@ Page({
   _getMaxVisible(cw, zl) {
     const base = zl === 1 ? Math.floor(cw / 100) : zl === 2 ? Math.floor(cw / 70) :
       zl === 3 ? Math.floor(cw / 50) : zl === 4 ? Math.floor(cw / 40) : Math.floor(cw / 30);
-    return Math.max(5, Math.floor(base * this.densityMultiplier));
+    return Math.max(5, base);
   },
 
   _selectEvents(visS, visE, max, centerYear) {
+    // v2.0: 密度星级制过滤 - 只显示 level <= densityLevel 的事件
     const filtered = this.events.filter(e =>
-      e.year >= visS && e.year <= visE && this.activeCategories.has(e.category)
+      e.year >= visS && e.year <= visE &&
+      this.activeCategories.has(e.category) &&
+      e.level <= this.densityLevel
     );
 
     // Score by level + focus proximity
@@ -418,7 +433,7 @@ Page({
 
   _layoutEvents(events, vh, vw) {
     const result = [];
-    const halfGap = 60;
+    const halfGap = 80; // v2.0: 防重叠间距加大(60→80)
     const upperSlots = [], lowerSlots = [];
 
     events.forEach(e => {
@@ -476,7 +491,9 @@ Page({
         const scale = dist / this._pinchDist;
         const centerX = this._cw / 2;
         const centerYear = this._xToYear(centerX);
-        this.pixelsPerYear = Math.max(0.01, Math.min(30, this.pixelsPerYear * scale));
+        // v2.0: 缩放最小值动态限制
+        const minPPY = this._getMinPPY();
+        this.pixelsPerYear = Math.max(minPPY, Math.min(30, this.pixelsPerYear * scale));
         this.offsetX = centerX - centerYear * this.pixelsPerYear;
         this._clampOffsetSoft();
         this.manualFocusDynasty = null;
@@ -495,10 +512,15 @@ Page({
         const ty = this._lastTouchY;
         for (const area of this._hitAreas) {
           if (tx >= area.x && tx <= area.x + area.w && ty >= area.y && ty <= area.y + area.h) {
+            this._activeEvent = area.event;
             this._showDetail(area.event);
+            this._render();
             return;
           }
         }
+        // Tap on empty area: clear active
+        this._activeEvent = null;
+        this._render();
       }
       // Inertia
       this._inertia();
@@ -525,8 +547,8 @@ Page({
   },
 
   onDensityChange(e) {
-    this.densityMultiplier = e.detail.value / 100;
-    this.setData({ densityText: this.densityMultiplier.toFixed(1) + 'x' });
+    this.densityLevel = e.detail.value;
+    this.setData({ densityText: densityStars(this.densityLevel) });
     this._render();
   },
 
@@ -538,8 +560,8 @@ Page({
     const centerYear = (d.start + d.end) / 2;
     const vw = this._cw;
     const dynastySpan = d.end - d.start;
-    const targetPPY = Math.max(0.15, (vw * 0.6) / Math.max(dynastySpan, 1));
-    this.pixelsPerYear = Math.min(30, Math.max(0.01, targetPPY));
+    const targetPPY = Math.max(this._getMinPPY(), (vw * 0.6) / Math.max(dynastySpan, 1));
+    this.pixelsPerYear = Math.min(30, targetPPY);
     this.offsetX = vw / 2 - centerYear * this.pixelsPerYear;
     this._clampOffsetSoft();
     this._render();
@@ -590,6 +612,7 @@ Page({
     this.pixelsPerYear = 1.0;
     this.offsetX = this._cw / 2 - ev.year * this.pixelsPerYear;
     this._clampOffsetSoft();
+    this._activeEvent = ev;
     this.setData({ searchShow: false });
     this._render();
     setTimeout(() => this._showDetail(ev), 300);

@@ -41,7 +41,7 @@
     <view class="toolbar-divider"></view>
     <view class="density-section">
       <text class="density-label">密度</text>
-      <slider class="density-slider" min="30" max="300" value="{{densityVal}}" step="10"
+      <slider class="density-slider" min="1" max="5" value="{{densityVal}}" step="1"
         activeColor="#c9a96e" backgroundColor="rgba(201,169,110,0.25)" block-size="12"
         bindchange="onDensityChange"/>
       <text class="density-value">{{densityText}}</text>
